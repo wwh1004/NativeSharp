@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28107.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeSharp", "NativeSharp\NativeSharp.csproj", "{5DF1E1DD-A0B0-44F4-944C-A6F9A3C13544}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NativeSharp", "NativeSharp\NativeSharp.csproj", "{2CD47F09-B324-4B20-8C8B-38FC4A037E37}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5DF1E1DD-A0B0-44F4-944C-A6F9A3C13544}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5DF1E1DD-A0B0-44F4-944C-A6F9A3C13544}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5DF1E1DD-A0B0-44F4-944C-A6F9A3C13544}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5DF1E1DD-A0B0-44F4-944C-A6F9A3C13544}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CD47F09-B324-4B20-8C8B-38FC4A037E37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CD47F09-B324-4B20-8C8B-38FC4A037E37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CD47F09-B324-4B20-8C8B-38FC4A037E37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CD47F09-B324-4B20-8C8B-38FC4A037E37}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
