@@ -4,17 +4,35 @@ using System.Text;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
+	/// <summary>
+	/// 导出函数信息
+	/// </summary>
 	public sealed class ExportFunctionInfo {
 		private readonly IntPtr _address;
 		private readonly string _name;
 		private readonly ushort _ordinal;
 
+		/// <summary>
+		/// 地址
+		/// </summary>
 		public IntPtr Address => _address;
 
+		/// <summary>
+		/// 名称
+		/// </summary>
 		public string Name => _name;
 
+		/// <summary>
+		/// 序号
+		/// </summary>
 		public ushort Ordinal => _ordinal;
 
+		/// <summary>
+		/// 构造器
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="name">名称</param>
+		/// <param name="ordinal">序号</param>
 		public ExportFunctionInfo(IntPtr address, string name, ushort ordinal) {
 			if (string.IsNullOrEmpty(name))
 				throw new ArgumentNullException(nameof(name));
@@ -26,8 +44,13 @@ namespace NativeSharp {
 	}
 
 	unsafe partial class NativeModule {
+		/// <summary>
+		/// 通过函数名获取导出函数地址
+		/// </summary>
+		/// <param name="functionName">函数名</param>
+		/// <returns></returns>
 		public IntPtr GetFunctionAddress(string functionName) {
-			_process.QuickDemand(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION);
+			_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 			return GetFunctionAddressInternal(_process.Handle, _handle, functionName);
 		}
 
@@ -63,8 +86,12 @@ namespace NativeSharp {
 			return IntPtr.Zero;
 		}
 
+		/// <summary>
+		/// 获取所有导出函数信息
+		/// </summary>
+		/// <returns></returns>
 		public ExportFunctionInfo[] GetFunctionInfos() {
-			_process.QuickDemand(PROCESS_VM_READ | PROCESS_QUERY_INFORMATION);
+			_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 			return GetFunctionInfosInternal(_process.Handle, _handle);
 		}
 
@@ -105,7 +132,7 @@ namespace NativeSharp {
 			bool is64Bit;
 			uint iedRVA;
 
-			ied = default(IMAGE_EXPORT_DIRECTORY);
+			ied = default;
 			nameOffsets = null;
 			if (!NativeProcess.ReadUInt32Internal(processHandle, (IntPtr)((byte*)moduleHandle + 0x3C), out ntHeaderOffset))
 				return false;

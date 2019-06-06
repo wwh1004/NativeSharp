@@ -23,10 +23,8 @@ namespace NativeSharp {
 			if (string.IsNullOrEmpty(methodName))
 				throw new ArgumentNullException(nameof(methodName));
 
-			int dummy;
-
-			QuickDemand(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE);
-			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, out dummy, false);
+			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
+			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, out _, false);
 		}
 
 		/// <summary>
@@ -48,14 +46,13 @@ namespace NativeSharp {
 			if (string.IsNullOrEmpty(methodName))
 				throw new ArgumentNullException(nameof(methodName));
 
-			QuickDemand(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE);
+			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
 			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, out returnValue, true);
 		}
 
 		/// <summary>
 		/// 注入非托管DLL
 		/// </summary>
-		/// <param name="processId">要注入的进程ID</param>
 		/// <param name="dllPath">要注入DLL的路径</param>
 		/// <returns></returns>
 		public bool InjectUnmanaged(string dllPath) {
@@ -64,7 +61,7 @@ namespace NativeSharp {
 			if (!File.Exists(dllPath))
 				throw new FileNotFoundException();
 
-			QuickDemand(PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION | PROCESS_VM_READ | PROCESS_VM_WRITE | PROCESS_QUERY_INFORMATION | SYNCHRONIZE);
+			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
 			return Injector.InjectUnmanagedInternal(_handle, dllPath);
 		}
 	}
@@ -170,7 +167,7 @@ namespace NativeSharp {
 
 			pLoadLibrary = NativeModule.GetFunctionAddressInternal(processHandle, "kernel32.dll", "LoadLibraryW");
 			// 获取LoadLibrary的函数地址
-			pDllPath = NativeProcess.AllocMemoryInternal(processHandle, (uint)dllPath.Length * 2 + 2, MemoryProtectionFlags.ExecuteRead);
+			pDllPath = NativeProcess.AllocMemoryInternal(processHandle, (uint)dllPath.Length * 2 + 2, MemoryProtection.ExecuteRead);
 			try {
 				if (pDllPath == IntPtr.Zero)
 					return false;
@@ -200,7 +197,7 @@ namespace NativeSharp {
 			if (!NativeProcess.Is64BitProcessInternal(processHandle, out is64Bit))
 				return IntPtr.Zero;
 			machineCode = GetMachineCodeTemplate(clrVersion, assemblyPath, typeName, methodName, argument);
-			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument == null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtectionFlags.ExecuteReadWrite);
+			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument == null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
 			if (pEnvironment == IntPtr.Zero)
 				return IntPtr.Zero;
 			try {
@@ -451,7 +448,6 @@ namespace NativeSharp {
 			p[0] = 0xC2;
 			p[1] = 0x04;
 			p[2] = 0x00;
-			p += 3;
 			// ret 0x4
 			#endregion
 		}
@@ -728,7 +724,6 @@ namespace NativeSharp {
 			p[0] = 0xC2;
 			p[1] = 0x04;
 			p[2] = 0x00;
-			p += 3;
 			// ret 0x4
 			#endregion
 		}
@@ -930,7 +925,6 @@ namespace NativeSharp {
 			p += 1;
 			// pop rbp
 			p[0] = 0xC3;
-			p += 1;
 			// ret
 			#endregion
 		}
@@ -1208,7 +1202,6 @@ namespace NativeSharp {
 			p += 1;
 			// pop rbp
 			p[0] = 0xC3;
-			p += 1;
 			// ret
 			#endregion
 		}

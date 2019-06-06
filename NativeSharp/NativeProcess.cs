@@ -3,16 +3,72 @@ using System.Text;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
+	/// <summary>
+	/// 进程权限
+	/// </summary>
+	public enum ProcessAccess : uint {
+		/// <summary />
+		CreateProcess = 0x0080,
+
+		/// <summary />
+		CreateThread = 0x0002,
+
+		/// <summary />
+		DuplicateHandle = 0x0040,
+
+		/// <summary />
+		QueryInformation = 0x0400,
+
+		/// <summary />
+		QueryLimitedInformation = 0x1000,
+
+		/// <summary />
+		SetInformation = 0x0200,
+
+		/// <summary />
+		SetQuota = 0x0100,
+
+		/// <summary />
+		SuspendResume = 0x0800,
+
+		/// <summary />
+		Synchronize = 0x00100000,
+
+		/// <summary />
+		Terminate = 0x0001,
+
+		/// <summary />
+		MemoryOperation = 0x0008,
+
+		/// <summary />
+		MemoryRead = 0x0010,
+
+		/// <summary />
+		MemoryWrite = 0x0020,
+
+		/// <summary />
+		AllAccess = STANDARD_RIGHTS_REQUIRED | Synchronize | 0xFFFF
+	}
+
+	/// <summary>
+	/// Win32进程
+	/// </summary>
 	public sealed unsafe partial class NativeProcess : IDisposable {
-		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcessId(), GetCurrentProcess(), PROCESS_ALL_ACCESS);
+		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcessId(), GetCurrentProcess(), ProcessAccess.AllAccess);
 
 		private readonly uint _id;
 		private readonly IntPtr _handle;
-		private readonly uint? _access;
+		private readonly ProcessAccess? _access;
 		private bool _isDisposed;
 
+		/// <summary>
+		/// 当前进程
+		/// </summary>
 		public static NativeProcess CurrentProcess => _currentProcess;
 
+		/// <summary>
+		/// 进程ID
+		/// </summary>
 		public uint Id {
 			get {
 				QuickDemand(0);
@@ -20,6 +76,9 @@ namespace NativeSharp {
 			}
 		}
 
+		/// <summary>
+		/// 打开进程时获取的句柄
+		/// </summary>
 		public IntPtr Handle {
 			get {
 				QuickDemand(0);
@@ -27,6 +86,9 @@ namespace NativeSharp {
 			}
 		}
 
+		/// <summary>
+		/// 是否为有效句柄
+		/// </summary>
 		public bool IsValid {
 			get {
 				QuickDemand(0);
@@ -34,36 +96,65 @@ namespace NativeSharp {
 			}
 		}
 
-		private NativeProcess(uint processId, IntPtr processHandle, uint? access) {
-			_id = processId;
-			_handle = processHandle;
+		private NativeProcess(uint id, IntPtr handle, ProcessAccess? access) {
+			_id = id;
+			_handle = handle;
 			_access = access;
 		}
 
-		public static NativeProcess Open(uint processId) => Open(processId, PROCESS_ALL_ACCESS);
+		/// <summary>
+		/// 打开进程
+		/// </summary>
+		/// <param name="id">进程ID</param>
+		/// <returns></returns>
+		public static NativeProcess Open(uint id) {
+			return Open(id, ProcessAccess.AllAccess);
+		}
 
-		public static NativeProcess Open(uint processId, uint access) {
+		/// <summary>
+		/// 打开进程
+		/// </summary>
+		/// <param name="id">进程ID</param>
+		/// <param name="access">权限</param>
+		/// <returns></returns>
+		public static NativeProcess Open(uint id, ProcessAccess access) {
 			IntPtr processHandle;
 
-			processHandle = OpenProcess(access | PROCESS_QUERY_INFORMATION, false, processId);
-			return processHandle == IntPtr.Zero ? null : new NativeProcess(processId, processHandle, access | PROCESS_QUERY_INFORMATION);
+			access |= ProcessAccess.QueryInformation;
+			processHandle = OpenProcess((uint)access, false, id);
+			return processHandle == IntPtr.Zero ? null : new NativeProcess(id, processHandle, access);
 		}
 
-		public static NativeProcess UnsafeOpen(IntPtr processHandle) {
-			// 跳过权限检查
-			if (processHandle == IntPtr.Zero)
+		/// <summary>
+		/// 通过已有句柄打开进程，并且跳过权限检查
+		/// </summary>
+		/// <param name="handle">进程句柄</param>
+		/// <returns></returns>
+		public static NativeProcess UnsafeOpen(IntPtr handle) {
+			if (handle == IntPtr.Zero)
 				return null;
 
-			uint processId;
+			uint id;
 
-			processId = GetProcessId(processHandle);
-			return processId == 0 ? null : new NativeProcess(processId, processHandle, null);
+			id = GetProcessId(handle);
+			return id == 0 ? null : new NativeProcess(id, handle, null);
 		}
 
-		public static NativeProcess UnsafeOpen(uint processId, IntPtr processHandle) => processHandle == IntPtr.Zero ? null : new NativeProcess(processId, processHandle, null);
-		// 跳过权限检查
+		/// <summary>
+		/// 通过已有句柄打开进程，并且跳过权限检查
+		/// </summary>
+		/// <param name="id">进程ID</param>
+		/// <param name="handle">进程句柄</param>
+		/// <returns></returns>
+		public static NativeProcess UnsafeOpen(uint id, IntPtr handle) {
+			return handle == IntPtr.Zero ? null : new NativeProcess(id, handle, null);
+		}
 
-		public void QuickDemand(uint requireAccess) {
+		/// <summary>
+		/// 快速严重当前实例是否有效
+		/// </summary>
+		/// <param name="requireAccess">需要的权限</param>
+		public void QuickDemand(ProcessAccess requireAccess) {
 			if (_isDisposed)
 				throw new ObjectDisposedException(nameof(NativeProcess));
 			if (_access != null && (_access.Value & requireAccess) != requireAccess)
@@ -97,7 +188,7 @@ namespace NativeSharp {
 				return moduleHandle;
 			moduleHandles = new IntPtr[size / IntPtr.Size];
 			fixed (IntPtr* p = moduleHandles)
-				if (!EnumProcessModulesEx(processHandle, p, size, out size, LIST_MODULES_ALL))
+				if (!EnumProcessModulesEx(processHandle, p, size, out _, LIST_MODULES_ALL))
 					return IntPtr.Zero;
 			moduleNameBuffer = new StringBuilder((int)MAX_MODULE_NAME32);
 			for (int i = 0; i < moduleHandles.Length; i++) {
@@ -109,6 +200,7 @@ namespace NativeSharp {
 			return IntPtr.Zero;
 		}
 
+		/// <summary />
 		public void Dispose() {
 			if (_isDisposed)
 				return;

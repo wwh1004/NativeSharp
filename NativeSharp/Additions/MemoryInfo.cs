@@ -3,69 +3,110 @@ using System.Collections.Generic;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
-	public enum MemoryProtectionFlags : uint {
+	/// <summary>
+	/// 内存保护选项
+	/// </summary>
+	public enum MemoryProtection : uint {
+		/// <summary />
 		NoAccess = 0x01,
 
+		/// <summary />
 		ReadOnly = 0x02,
 
+		/// <summary />
 		ReadWrite = 0x04,
 
+		/// <summary />
 		WriteCopy = 0x08,
 
+		/// <summary />
 		Execute = 0x10,
 
+		/// <summary />
 		ExecuteRead = 0x20,
 
+		/// <summary />
 		ExecuteReadWrite = 0x40,
 
+		/// <summary />
 		ExecuteWriteCopy = 0x80,
 
+		/// <summary />
 		Guard = 0x100,
 
+		/// <summary />
 		NoCache = 0x200,
 
+		/// <summary />
 		WriteCombine = 0x400
 	}
 
-	public enum MemoryTypeFlags : uint {
+	/// <summary>
+	/// 内存类型选项
+	/// </summary>
+	public enum MemoryType : uint {
+		/// <summary />
 		Commit = 0x00001000,
 
+		/// <summary />
 		Reserve = 0x00002000,
 
+		/// <summary />
 		Decommit = 0x00004000,
 
+		/// <summary />
 		Release = 0x00008000,
 
+		/// <summary />
 		Free = 0x00010000,
 
+		/// <summary />
 		Private = 0x00020000,
 
+		/// <summary />
 		Mapped = 0x00040000,
 
+		/// <summary />
 		Reset = 0x00080000
 	}
 
+	/// <summary>
+	/// 页面信息
+	/// </summary>
 	public sealed class PageInfo {
 		private readonly IntPtr _address;
 		private readonly IntPtr _size;
-		private readonly MemoryProtectionFlags _protectionFlags;
-		private readonly MemoryTypeFlags _typeFlags;
+		private readonly MemoryProtection _protection;
+		private readonly MemoryType _type;
 
+		/// <summary>
+		/// 起始地址
+		/// </summary>
 		public IntPtr Address => _address;
 
+		/// <summary>
+		/// 大小
+		/// </summary>
 		public IntPtr Size => _size;
 
-		public MemoryProtectionFlags ProtectionFlags => _protectionFlags;
+		/// <summary>
+		/// 保护
+		/// </summary>
+		public MemoryProtection Protection => _protection;
 
-		public MemoryTypeFlags TypeFlags => _typeFlags;
+		/// <summary>
+		/// 类型
+		/// </summary>
+		public MemoryType Type => _type;
 
 		internal PageInfo(MEMORY_BASIC_INFORMATION mbi) {
 			_address = mbi.BaseAddress;
 			_size = mbi.RegionSize;
-			_protectionFlags = (MemoryProtectionFlags)mbi.Protect;
-			_typeFlags = (MemoryTypeFlags)mbi.Type;
+			_protection = (MemoryProtection)mbi.Protect;
+			_type = (MemoryType)mbi.Type;
 		}
 
+		/// <summary />
 		public override string ToString() {
 			bool is64Bit;
 
@@ -75,25 +116,32 @@ namespace NativeSharp {
 	}
 
 	unsafe partial class NativeProcess {
+		/// <summary>
+		/// 获取所有页面信息
+		/// </summary>
+		/// <returns></returns>
 		public PageInfo[] GetPageInfos() {
-			QuickDemand(PROCESS_QUERY_INFORMATION);
+			QuickDemand(ProcessAccess.QueryInformation);
 			return GetPageInfosInternal(_handle, IntPtr.Zero, (IntPtr)(-1));
 		}
 
+		/// <summary>
+		/// 获取范围内页面信息
+		/// </summary>
+		/// <param name="startAddress">起始地址</param>
+		/// <param name="endAddress">结束地址</param>
+		/// <returns></returns>
 		public PageInfo[] GetPageInfos(IntPtr startAddress, IntPtr endAddress) {
-			QuickDemand(PROCESS_QUERY_INFORMATION);
+			QuickDemand(ProcessAccess.QueryInformation);
 			return GetPageInfosInternal(_handle, startAddress, endAddress);
 		}
 
 		internal static PageInfo[] GetPageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
 			bool is64Bit;
 
-#pragma warning disable IDE0046
-			if (Is64BitProcessInternal(processHandle, out is64Bit))
-				return is64Bit ? GetPageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : GetPageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress);
-			else
-				return null;
-#pragma warning restore IDE0046
+			return Is64BitProcessInternal(processHandle, out is64Bit)
+				? is64Bit ? GetPageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : GetPageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress)
+				: null;
 		}
 
 		internal static PageInfo[] GetPageInfosInternal32(IntPtr processHandle, uint startAddress, uint endAddress) {

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>NativeSharp</RootNamespace>
     <AssemblyName>NativeSharp</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
@@ -22,7 +22,8 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>IDE0032</NoWarn>
+    <LangVersion>7.3</LangVersion>
+    <DocumentationFile>..\bin\Debug\NativeSharp.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,20 +33,21 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>IDE0032</NoWarn>
+    <LangVersion>7.3</LangVersion>
+    <DocumentationFile>..\bin\Release\NativeSharp.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Additions\ExportTableInfo.cs" />
+    <Compile Include="Additions\Injector.cs" />
+    <Compile Include="Additions\MemoryAllocFree.cs" />
+    <Compile Include="Additions\MemoryInfo.cs" />
+    <Compile Include="Additions\MemoryIO.cs" />
+    <Compile Include="Additions\ModuleInfo.cs" />
+    <Compile Include="Additions\ProcessInfo.cs" />
     <Compile Include="NativeEnvironment.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NativeModule.cs" />
     <Compile Include="NativeProcess.cs" />
-    <Compile Include="Extensions\ExportTableInfo.cs" />
-    <Compile Include="Extensions\Injector.cs" />
-    <Compile Include="Extensions\MemoryAllocFree.cs" />
-    <Compile Include="Extensions\MemoryInfo.cs" />
-    <Compile Include="Extensions\MemoryRW.cs" />
-    <Compile Include="Extensions\ModuleInfo.cs" />
-    <Compile Include="Extensions\ProcessInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

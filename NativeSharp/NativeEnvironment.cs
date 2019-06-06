@@ -2,9 +2,15 @@ using System;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
+	/// <summary>
+	/// Win32环境
+	/// </summary>
 	public static class NativeEnvironment {
 		private static readonly bool _is64BitOperatingSystem;
 
+		/// <summary>
+		/// 是否为64位操作系统
+		/// </summary>
 		public static bool Is64BitOperatingSystem => _is64BitOperatingSystem;
 
 		static NativeEnvironment() {
