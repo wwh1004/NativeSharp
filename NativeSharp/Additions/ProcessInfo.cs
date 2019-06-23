@@ -68,7 +68,7 @@ namespace NativeSharp {
 
 			QuickDemand(ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, true, null);
-			return moduleHandle == IntPtr.Zero ? null : new NativeModule(this, moduleHandle);
+			return moduleHandle == IntPtr.Zero ? null : UnsafeGetModule(moduleHandle);
 		}
 
 		/// <summary>
@@ -77,11 +77,26 @@ namespace NativeSharp {
 		/// <param name="moduleName">模块名</param>
 		/// <returns></returns>
 		public NativeModule GetModule(string moduleName) {
+			if (string.IsNullOrEmpty(moduleName))
+				throw new ArgumentNullException(nameof(moduleName));
+
 			IntPtr moduleHandle;
 
 			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, false, moduleName);
-			return moduleHandle == IntPtr.Zero ? null : new NativeModule(this, moduleHandle);
+			return moduleHandle == IntPtr.Zero ? null : UnsafeGetModule(moduleHandle);
+		}
+
+		/// <summary>
+		/// 通过模块句柄直接获取模块，只要 <paramref name="moduleHandle"/> 不为零，均会返回一个 <see cref="NativeModule"/> 实例
+		/// </summary>
+		/// <param name="moduleHandle">模块句柄</param>
+		/// <returns></returns>
+		public NativeModule UnsafeGetModule(IntPtr moduleHandle) {
+			if (moduleHandle == IntPtr.Zero)
+				return null;
+
+			return new NativeModule(this, moduleHandle);
 		}
 
 		/// <summary />

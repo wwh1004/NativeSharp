@@ -14,9 +14,9 @@ namespace NativeSharp {
 		public IntPtr Handle => _handle;
 
 		/// <summary>
-		/// 是否为有效句柄
+		/// 是否为零
 		/// </summary>
-		public bool IsValid => _handle != IntPtr.Zero;
+		public bool IsZero => _handle == IntPtr.Zero;
 
 		/// <summary>
 		/// 构造器

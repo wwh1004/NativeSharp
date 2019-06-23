@@ -34,11 +34,8 @@ namespace NativeSharp {
 		/// <param name="name">名称</param>
 		/// <param name="ordinal">序号</param>
 		public ExportFunctionInfo(IntPtr address, string name, ushort ordinal) {
-			if (string.IsNullOrEmpty(name))
-				throw new ArgumentNullException(nameof(name));
-
 			_address = address;
-			_name = name;
+			_name = name ?? string.Empty;
 			_ordinal = ordinal;
 		}
 	}

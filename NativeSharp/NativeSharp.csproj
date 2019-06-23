@@ -44,6 +44,7 @@
     <Compile Include="Additions\MemoryIO.cs" />
     <Compile Include="Additions\ModuleInfo.cs" />
     <Compile Include="Additions\ProcessInfo.cs" />
+    <Compile Include="Additions\ProcessUtils.cs" />
     <Compile Include="NativeEnvironment.cs" />
     <Compile Include="NativeMethods.cs" />
     <Compile Include="NativeModule.cs" />
