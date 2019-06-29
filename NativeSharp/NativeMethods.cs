@@ -27,7 +27,7 @@ namespace NativeSharp {
 
 		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
 		public struct IMAGE_EXPORT_DIRECTORY {
-			public static readonly uint UnmanagedSize = (uint)sizeof(MEMORY_BASIC_INFORMATION);
+			public static readonly uint UnmanagedSize = (uint)sizeof(IMAGE_EXPORT_DIRECTORY);
 
 			public uint Characteristics;
 			public uint TimeDateStamp;

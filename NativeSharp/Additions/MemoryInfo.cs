@@ -139,43 +139,43 @@ namespace NativeSharp {
 		internal static PageInfo[] GetPageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
 			bool is64Bit;
 
-			return Is64BitProcessInternal(processHandle, out is64Bit)
-				? is64Bit ? GetPageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : GetPageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress)
-				: null;
+			if (!Is64BitProcessInternal(processHandle, out is64Bit))
+				return null;
+			return is64Bit ? GetPageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : GetPageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress);
 		}
 
 		internal static PageInfo[] GetPageInfosInternal32(IntPtr processHandle, uint startAddress, uint endAddress) {
 			uint nextAddress;
-			List<PageInfo> pageInfoList;
+			List<PageInfo> pageInfos;
 
 			nextAddress = startAddress;
-			pageInfoList = new List<PageInfo>();
+			pageInfos = new List<PageInfo>();
 			do {
 				MEMORY_BASIC_INFORMATION mbi;
 
 				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
-				pageInfoList.Add(new PageInfo(mbi));
+				pageInfos.Add(new PageInfo(mbi));
 				nextAddress = (uint)mbi.BaseAddress + (uint)mbi.RegionSize;
 			} while ((int)nextAddress > 0 && nextAddress < endAddress);
-			return pageInfoList.Count == 0 ? null : pageInfoList.ToArray();
+			return pageInfos.Count == 0 ? null : pageInfos.ToArray();
 		}
 
 		internal static PageInfo[] GetPageInfosInternal64(IntPtr processHandle, ulong startAddress, ulong endAddress) {
 			ulong nextAddress;
-			List<PageInfo> pageInfoList;
+			List<PageInfo> pageInfos;
 
 			nextAddress = startAddress;
-			pageInfoList = new List<PageInfo>();
+			pageInfos = new List<PageInfo>();
 			do {
 				MEMORY_BASIC_INFORMATION mbi;
 
 				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
-				pageInfoList.Add(new PageInfo(mbi));
+				pageInfos.Add(new PageInfo(mbi));
 				nextAddress = (ulong)mbi.BaseAddress + (ulong)mbi.RegionSize;
 			} while ((long)nextAddress > 0 && nextAddress < endAddress);
-			return pageInfoList.Count == 0 ? null : pageInfoList.ToArray();
+			return pageInfos.Count == 0 ? null : pageInfos.ToArray();
 		}
 	}
 }
