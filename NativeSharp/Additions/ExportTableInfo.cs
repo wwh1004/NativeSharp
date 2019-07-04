@@ -85,41 +85,34 @@ namespace NativeSharp {
 		/// 获取所有导出函数信息
 		/// </summary>
 		/// <returns></returns>
-		public ExportFunctionInfo[] GetFunctionInfos() {
+		public IEnumerable<ExportFunctionInfo> EnumerateFunctionInfos() {
 			_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			return GetFunctionInfosInternal(_process.Handle, _handle);
+			return EnumerateFunctionInfosInternal(_process.Handle, _handle);
 		}
 
-		internal static ExportFunctionInfo[] GetFunctionInfosInternal(IntPtr processHandle, string moduleName) {
+		internal static IEnumerable<ExportFunctionInfo> EnumerateFunctionInfosInternal(IntPtr processHandle, string moduleName) {
 			IntPtr moduleHandle;
 
 			moduleHandle = NativeProcess.GetModuleHandleInternal(processHandle, false, moduleName);
 			if (moduleHandle == IntPtr.Zero)
 				return null;
-			return GetFunctionInfosInternal(processHandle, moduleHandle);
+			return EnumerateFunctionInfosInternal(processHandle, moduleHandle);
 		}
 
-		internal static ExportFunctionInfo[] GetFunctionInfosInternal(IntPtr processHandle, IntPtr moduleHandle) {
+		internal static IEnumerable<ExportFunctionInfo> EnumerateFunctionInfosInternal(IntPtr processHandle, IntPtr moduleHandle) {
 			IMAGE_EXPORT_DIRECTORY ied;
 			uint[] nameOffsets;
-			string functionName;
-			ushort ordinal;
-			uint addressOffset;
-			List<ExportFunctionInfo> exportFunctionInfos;
 
 			if (!GetExportTableInfo(processHandle, moduleHandle, out ied, out nameOffsets))
-				return null;
-			exportFunctionInfos = new List<ExportFunctionInfo>(nameOffsets.Length);
+				yield break;
 			for (uint i = 0; i < ied.NumberOfNames; i++) {
-				if (!NativeProcess.ReadStringInternal(processHandle, (IntPtr)((byte*)moduleHandle + nameOffsets[i]), out functionName, false, Encoding.ASCII))
-					continue;
-				if (!NativeProcess.ReadUInt16Internal(processHandle, (IntPtr)((byte*)moduleHandle + ied.AddressOfNameOrdinals + i * 2), out ordinal))
-					continue;
-				if (!NativeProcess.ReadUInt32Internal(processHandle, (IntPtr)((byte*)moduleHandle + ied.AddressOfFunctions + ordinal * 4), out addressOffset))
-					continue;
-				exportFunctionInfos.Add(new ExportFunctionInfo((IntPtr)((byte*)moduleHandle + addressOffset), functionName, ordinal));
+				ExportFunctionInfo functionInfo;
+
+				if (GetExportFunctionInfo(processHandle, moduleHandle, ied, nameOffsets, i, out functionInfo))
+					yield return functionInfo;
+				else
+					yield break;
 			}
-			return exportFunctionInfos.ToArray();
 		}
 
 		private static bool GetExportTableInfo(IntPtr processHandle, IntPtr moduleHandle, out IMAGE_EXPORT_DIRECTORY ied, out uint[] nameOffsets) {
@@ -150,6 +143,22 @@ namespace NativeSharp {
 			fixed (void* p = nameOffsets)
 				if (!ReadProcessMemory(processHandle, (IntPtr)((byte*)moduleHandle + ied.AddressOfNames), p, ied.NumberOfNames * 4, null))
 					return false;
+			return true;
+		}
+
+		private static bool GetExportFunctionInfo(IntPtr processHandle, IntPtr moduleHandle, IMAGE_EXPORT_DIRECTORY ied, uint[] nameOffsets, uint i, out ExportFunctionInfo functionInfo) {
+			string functionName;
+			ushort ordinal;
+			uint addressOffset;
+
+			functionInfo = default;
+			if (!NativeProcess.ReadStringInternal(processHandle, (IntPtr)((byte*)moduleHandle + nameOffsets[i]), out functionName, false, Encoding.ASCII))
+				return false;
+			if (!NativeProcess.ReadUInt16Internal(processHandle, (IntPtr)((byte*)moduleHandle + ied.AddressOfNameOrdinals + i * 2), out ordinal))
+				return false;
+			if (!NativeProcess.ReadUInt32Internal(processHandle, (IntPtr)((byte*)moduleHandle + ied.AddressOfFunctions + ordinal * 4), out addressOffset))
+				return false;
+			functionInfo = new ExportFunctionInfo((IntPtr)((byte*)moduleHandle + addressOffset), functionName, ordinal);
 			return true;
 		}
 	}

@@ -120,9 +120,9 @@ namespace NativeSharp {
 		/// 获取所有页面信息
 		/// </summary>
 		/// <returns></returns>
-		public PageInfo[] GetPageInfos() {
+		public IEnumerable<PageInfo> EnumeratePageInfos() {
 			QuickDemand(ProcessAccess.QueryInformation);
-			return GetPageInfosInternal(_handle, IntPtr.Zero, (IntPtr)(-1));
+			return EnumeratePageInfosInternal(_handle, IntPtr.Zero, (IntPtr)(-1));
 		}
 
 		/// <summary>
@@ -131,51 +131,45 @@ namespace NativeSharp {
 		/// <param name="startAddress">起始地址</param>
 		/// <param name="endAddress">结束地址</param>
 		/// <returns></returns>
-		public PageInfo[] GetPageInfos(IntPtr startAddress, IntPtr endAddress) {
+		public IEnumerable<PageInfo> EnumeratePageInfos(IntPtr startAddress, IntPtr endAddress) {
 			QuickDemand(ProcessAccess.QueryInformation);
-			return GetPageInfosInternal(_handle, startAddress, endAddress);
+			return EnumeratePageInfosInternal(_handle, startAddress, endAddress);
 		}
 
-		internal static PageInfo[] GetPageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
+		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
 			bool is64Bit;
 
 			if (!Is64BitProcessInternal(processHandle, out is64Bit))
 				return null;
-			return is64Bit ? GetPageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : GetPageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress);
+			return is64Bit ? EnumeratePageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : EnumeratePageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress);
 		}
 
-		internal static PageInfo[] GetPageInfosInternal32(IntPtr processHandle, uint startAddress, uint endAddress) {
+		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal32(IntPtr processHandle, uint startAddress, uint endAddress) {
 			uint nextAddress;
-			List<PageInfo> pageInfos;
 
 			nextAddress = startAddress;
-			pageInfos = new List<PageInfo>();
 			do {
 				MEMORY_BASIC_INFORMATION mbi;
 
 				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
-				pageInfos.Add(new PageInfo(mbi));
+				yield return new PageInfo(mbi);
 				nextAddress = (uint)mbi.BaseAddress + (uint)mbi.RegionSize;
 			} while ((int)nextAddress > 0 && nextAddress < endAddress);
-			return pageInfos.Count == 0 ? null : pageInfos.ToArray();
 		}
 
-		internal static PageInfo[] GetPageInfosInternal64(IntPtr processHandle, ulong startAddress, ulong endAddress) {
+		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal64(IntPtr processHandle, ulong startAddress, ulong endAddress) {
 			ulong nextAddress;
-			List<PageInfo> pageInfos;
 
 			nextAddress = startAddress;
-			pageInfos = new List<PageInfo>();
 			do {
 				MEMORY_BASIC_INFORMATION mbi;
 
 				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
-				pageInfos.Add(new PageInfo(mbi));
+				yield return new PageInfo(mbi);
 				nextAddress = (ulong)mbi.BaseAddress + (ulong)mbi.RegionSize;
 			} while ((long)nextAddress > 0 && nextAddress < endAddress);
-			return pageInfos.Count == 0 ? null : pageInfos.ToArray();
 		}
 	}
 }
