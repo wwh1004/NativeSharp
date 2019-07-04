@@ -4,6 +4,26 @@ using System.Text;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
+	/// <summary>
+	/// 注入时使用的CLR版本
+	/// </summary>
+	public enum InjectionClrVersion {
+		/// <summary>
+		/// 自动选择，由要注入的程序集本身决定
+		/// </summary>
+		Auto,
+
+		/// <summary>
+		/// v2.0.50727
+		/// </summary>
+		V2,
+
+		/// <summary>
+		/// v4.0.30319
+		/// </summary>
+		V4
+	}
+
 	unsafe partial class NativeProcess {
 		/// <summary>
 		/// 注入托管DLL
@@ -14,6 +34,19 @@ namespace NativeSharp {
 		/// <param name="argument">参数，可传入 <see langword="null"/></param>
 		/// <returns></returns>
 		public bool InjectManaged(string assemblyPath, string typeName, string methodName, string argument) {
+			return InjectManaged(assemblyPath, typeName, methodName, argument, InjectionClrVersion.Auto);
+		}
+
+		/// <summary>
+		/// 注入托管DLL
+		/// </summary>
+		/// <param name="assemblyPath">要注入程序集的路径</param>
+		/// <param name="typeName">类型名（命名空间+类型名，比如NamespaceA.ClassB）</param>
+		/// <param name="methodName">方法名（比如MethodC），该方法必须具有此类签名static int MethodName(string)，比如private static int InjectingMain(string argument)</param>
+		/// <param name="argument">参数，可传入 <see langword="null"/></param>
+		/// <param name="clrVersion">使用的CLR版本</param>
+		/// <returns></returns>
+		public bool InjectManaged(string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion) {
 			if (string.IsNullOrEmpty(assemblyPath))
 				throw new ArgumentNullException(nameof(assemblyPath));
 			if (!File.Exists(assemblyPath))
@@ -24,7 +57,7 @@ namespace NativeSharp {
 				throw new ArgumentNullException(nameof(methodName));
 
 			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
-			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, out _, false);
+			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, clrVersion, out _, false);
 		}
 
 		/// <summary>
@@ -37,6 +70,20 @@ namespace NativeSharp {
 		/// <param name="returnValue">被调用方法返回的整数值</param>
 		/// <returns></returns>
 		public bool InjectManaged(string assemblyPath, string typeName, string methodName, string argument, out int returnValue) {
+			return InjectManaged(assemblyPath, typeName, methodName, argument, InjectionClrVersion.Auto, out returnValue);
+		}
+
+		/// <summary>
+		/// 注入托管DLL，并获取被调用方法的返回值（警告：被调用方法返回后才能获取到返回值，<see cref="InjectManaged(string, string, string, string, out int)"/>方法将一直等待到被调用方法返回。如果仅注入程序集而不需要获取返回值，请使用重载版本<see cref="InjectManaged(string, string, string, string)"/>）
+		/// </summary>
+		/// <param name="assemblyPath">要注入程序集的路径</param>
+		/// <param name="typeName">类型名（命名空间+类型名，比如NamespaceA.ClassB）</param>
+		/// <param name="methodName">方法名（比如MethodC），该方法必须具有此类签名static int MethodName(string)，比如private static int InjectingMain(string argument)</param>
+		/// <param name="argument">参数，可传入 <see langword="null"/></param>
+		/// <param name="clrVersion">使用的CLR版本</param>
+		/// <param name="returnValue">被调用方法返回的整数值</param>
+		/// <returns></returns>
+		public bool InjectManaged(string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue) {
 			if (string.IsNullOrEmpty(assemblyPath))
 				throw new ArgumentNullException(nameof(assemblyPath));
 			if (!File.Exists(assemblyPath))
@@ -47,7 +94,7 @@ namespace NativeSharp {
 				throw new ArgumentNullException(nameof(methodName));
 
 			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
-			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, out returnValue, true);
+			return Injector.InjectManagedInternal(_handle, assemblyPath, typeName, methodName, argument, clrVersion, out returnValue, true);
 		}
 
 		/// <summary>
@@ -67,39 +114,24 @@ namespace NativeSharp {
 	}
 
 	internal static unsafe class Injector {
-		#region Constant
+		private const string CLR_V2 = "v2.0.50727";
+		private const string CLR_V4 = "v4.0.30319";
 		private const int AssemblyPathOffset = 0x200;
-
 		private const int TypeNameOffset = 0x800;
-
 		private const int MethodNameOffset = 0x980;
-
 		private const int ReturnValueOffset = 0xA00;
-
 		private const int CLRVersionOffset = 0xA10;
-
 		private const int CLSID_CLRMetaHostOffset = 0xA60;
-
 		private const int IID_ICLRMetaHostOffset = 0xA70;
-
 		private const int IID_ICLRRuntimeInfoOffset = 0xA80;
-
 		private const int CLSID_CLRRuntimeHostOffset = 0xA90;
-
 		private const int IID_ICLRRuntimeHostOffset = 0xAA0;
-
 		private const int ArgumentOffset = 0xB00;
-
 		private readonly static byte[] CLSID_CLRMetaHost = new Guid(0x9280188D, 0x0E8E, 0x4867, 0xB3, 0x0C, 0x7F, 0xA8, 0x38, 0x84, 0xE8, 0xDE).ToByteArray();
-
 		private readonly static byte[] IID_ICLRMetaHost = new Guid(0xD332DB9E, 0xB9B3, 0x4125, 0x82, 0x07, 0xA1, 0x48, 0x84, 0xF5, 0x32, 0x16).ToByteArray();
-
 		private readonly static byte[] IID_ICLRRuntimeInfo = new Guid(0xBD39D1D2, 0xBA2F, 0x486A, 0x89, 0xB0, 0xB4, 0xB0, 0xCB, 0x46, 0x68, 0x91).ToByteArray();
-
 		private readonly static byte[] CLSID_CLRRuntimeHost = new Guid(0x90F1A06E, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02).ToByteArray();
-
 		private readonly static byte[] IID_ICLRRuntimeHost = new Guid(0x90F1A06C, 0x7712, 0x4762, 0x86, 0xB5, 0x7A, 0x5E, 0xBA, 0x6B, 0xDB, 0x02).ToByteArray();
-		#endregion
 
 		private struct SectionHeader {
 			public uint VirtualSize;
@@ -118,10 +150,10 @@ namespace NativeSharp {
 			}
 		}
 
-		internal static bool InjectManagedInternal(IntPtr processHandle, string assemblyPath, string typeName, string methodName, string argument, out int returnValue, bool wait) {
+		internal static bool InjectManagedInternal(IntPtr processHandle, string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue, bool wait) {
 			bool isAssembly;
+			InjectionClrVersion clrVersionTemp;
 			bool isWow64;
-			string clrVersion;
 			IntPtr pEnvironment;
 			IntPtr threadHandle;
 			uint exitCode;
@@ -129,7 +161,9 @@ namespace NativeSharp {
 			returnValue = 0;
 			assemblyPath = Path.GetFullPath(assemblyPath);
 			// 获取绝对路径
-			IsAssembly(assemblyPath, out isAssembly, out clrVersion);
+			IsAssembly(assemblyPath, out isAssembly, out clrVersionTemp);
+			if (clrVersion == InjectionClrVersion.Auto)
+				clrVersion = clrVersionTemp;
 			if (!isAssembly)
 				throw new NotSupportedException("Not a valid .NET assembly.");
 			if (!IsWow64Process(processHandle, out isWow64))
@@ -187,8 +221,9 @@ namespace NativeSharp {
 			}
 		}
 
-		private static IntPtr WriteMachineCode(IntPtr processHandle, string clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
+		private static IntPtr WriteMachineCode(IntPtr processHandle, InjectionClrVersion clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
 			bool is64Bit;
+			string clrVersionString;
 			byte[] machineCode;
 			IntPtr pEnvironment;
 			IntPtr pCorBindToRuntimeEx;
@@ -196,35 +231,42 @@ namespace NativeSharp {
 
 			if (!NativeProcess.Is64BitProcessInternal(processHandle, out is64Bit))
 				return IntPtr.Zero;
-			machineCode = GetMachineCodeTemplate(clrVersion, assemblyPath, typeName, methodName, argument);
+			switch (clrVersion) {
+			case InjectionClrVersion.V2:
+				clrVersionString = CLR_V2;
+				break;
+			case InjectionClrVersion.V4:
+				clrVersionString = CLR_V4;
+				break;
+			default:
+				throw new ArgumentOutOfRangeException(nameof(clrVersion));
+			}
+			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
 			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument == null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
 			if (pEnvironment == IntPtr.Zero)
 				return IntPtr.Zero;
 			try {
-				fixed (byte* p = machineCode) {
+				fixed (byte* p = machineCode)
 					switch (clrVersion) {
-					case "v2.0.50727":
+					case InjectionClrVersion.V2:
 						pCorBindToRuntimeEx = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CorBindToRuntimeEx");
 						if (pCorBindToRuntimeEx == IntPtr.Zero)
 							return IntPtr.Zero;
 						if (is64Bit)
-							SetMachineCode64v2(p, (ulong)pEnvironment, (ulong)pCorBindToRuntimeEx);
+							WriteMachineCode64v2(p, (ulong)pEnvironment, (ulong)pCorBindToRuntimeEx);
 						else
-							SetMachineCode32v2(p, (uint)pEnvironment, (uint)pCorBindToRuntimeEx);
+							WriteMachineCode32v2(p, (uint)pEnvironment, (uint)pCorBindToRuntimeEx);
 						break;
-					case "v4.0.30319":
+					case InjectionClrVersion.V4:
 						pCLRCreateInstance = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CLRCreateInstance");
 						if (pCLRCreateInstance == IntPtr.Zero)
 							return IntPtr.Zero;
 						if (is64Bit)
-							SetMachineCode64v4(p, (ulong)pEnvironment, (ulong)pCLRCreateInstance);
+							WriteMachineCode64v4(p, (ulong)pEnvironment, (ulong)pCLRCreateInstance);
 						else
-							SetMachineCode32v4(p, (uint)pEnvironment, (uint)pCLRCreateInstance);
+							WriteMachineCode32v4(p, (uint)pEnvironment, (uint)pCLRCreateInstance);
 						break;
-					default:
-						return IntPtr.Zero;
 					}
-				}
 				if (!NativeProcess.WriteBytesInternal(processHandle, pEnvironment, machineCode))
 					return IntPtr.Zero;
 			}
@@ -274,7 +316,7 @@ namespace NativeSharp {
 			}
 		}
 
-		private static void SetMachineCode32v2(byte* p, uint pFunction, uint pCorBindToRuntimeEx) {
+		private static void WriteMachineCode32v2(byte* p, uint pFunction, uint pCorBindToRuntimeEx) {
 			// HRESULT WINAPI LoadCLR2(DWORD *pReturnValue)
 			#region {
 			p[0] = 0x55;
@@ -452,7 +494,7 @@ namespace NativeSharp {
 			#endregion
 		}
 
-		private static void SetMachineCode32v4(byte* p, uint pFunction, uint pCLRCreateInstance) {
+		private static void WriteMachineCode32v4(byte* p, uint pFunction, uint pCLRCreateInstance) {
 			// HRESULT WINAPI LoadCLR4(DWORD *pReturnValue)
 			#region {
 			p[0] = 0x55;
@@ -728,7 +770,7 @@ namespace NativeSharp {
 			#endregion
 		}
 
-		private static void SetMachineCode64v2(byte* p, ulong pFunction, ulong pCorBindToRuntimeEx) {
+		private static void WriteMachineCode64v2(byte* p, ulong pFunction, ulong pCorBindToRuntimeEx) {
 			// HRESULT WINAPI LoadCLR2(DWORD *pReturnValue)
 			#region {
 			p[0] = 0x48;
@@ -929,7 +971,7 @@ namespace NativeSharp {
 			#endregion
 		}
 
-		private static void SetMachineCode64v4(byte* p, ulong pFunction, ulong pCLRCreateInstance) {
+		private static void WriteMachineCode64v4(byte* p, ulong pFunction, ulong pCLRCreateInstance) {
 			// HRESULT WINAPI LoadCLR4(DWORD *pReturnValue)
 			#region {
 			p[0] = 0x48;
@@ -1206,16 +1248,26 @@ namespace NativeSharp {
 			#endregion
 		}
 
-		private static void IsAssembly(string path, out bool isAssembly, out string clrVersion) {
+		private static void IsAssembly(string path, out bool isAssembly, out InjectionClrVersion clrVersion) {
 			BinaryReader binaryReader;
 
 			try {
 				using (binaryReader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read)))
-					clrVersion = GetVersionString(binaryReader);
+					switch (GetVersionString(binaryReader)) {
+					case CLR_V2:
+						clrVersion = InjectionClrVersion.V2;
+						break;
+					case CLR_V4:
+						clrVersion = InjectionClrVersion.V4;
+						break;
+					default:
+						clrVersion = default;
+						break;
+					}
 				isAssembly = true;
 			}
 			catch {
-				clrVersion = null;
+				clrVersion = default;
 				isAssembly = false;
 			}
 		}
