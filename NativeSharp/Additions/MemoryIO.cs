@@ -25,13 +25,9 @@ namespace NativeSharp {
 	/// </summary>
 	public sealed class Pointer {
 		private readonly string _moduleName;
-
 		private readonly uint _moduleOffset;
-
 		private readonly IntPtr _baseAddress;
-
 		private readonly uint[] _offsets;
-
 		private readonly PointerType _type;
 
 		/// <summary>
@@ -280,7 +276,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void ReadBytes(IntPtr address, byte[] value) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
@@ -295,7 +290,6 @@ namespace NativeSharp {
 		/// <param name="value">值</param>
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
-		/// <returns></returns>
 		public void ReadBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
 			ReadBytes(address, value, startIndex, length, out _);
 		}
@@ -528,7 +522,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteByte(IntPtr address, byte value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteByteInternal(_handle, address, value));
@@ -539,7 +532,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteInt16(IntPtr address, short value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt16Internal(_handle, address, value));
@@ -550,7 +542,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteUInt16(IntPtr address, ushort value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt16Internal(_handle, address, value));
@@ -561,7 +552,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteInt32(IntPtr address, int value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt32Internal(_handle, address, value));
@@ -572,7 +562,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteUInt32(IntPtr address, uint value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt32Internal(_handle, address, value));
@@ -583,7 +572,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteInt64(IntPtr address, long value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt64Internal(_handle, address, value));
@@ -594,7 +582,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteUInt64(IntPtr address, ulong value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt64Internal(_handle, address, value));
@@ -605,7 +592,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteSingle(IntPtr address, float value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteSingleInternal(_handle, address, value));
@@ -616,7 +602,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteDouble(IntPtr address, double value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteDoubleInternal(_handle, address, value));
@@ -627,7 +612,6 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		/// <returns></returns>
 		public void WriteBytes(IntPtr address, byte[] value) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
@@ -642,7 +626,6 @@ namespace NativeSharp {
 		/// <param name="value">值</param>
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
-		/// <returns></returns>
 		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
 			WriteBytes(address, value, startIndex, length, out _);
 		}
@@ -655,7 +638,6 @@ namespace NativeSharp {
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
 		/// <param name="writtenCount">实际写入字节数</param>
-		/// <returns></returns>
 		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
@@ -674,7 +656,6 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <param name="toEncoding">内存中字符串的编码</param>
-		/// <returns></returns>
 		public void WriteString(IntPtr address, string value, Encoding toEncoding) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));

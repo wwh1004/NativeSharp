@@ -164,6 +164,7 @@ namespace NativeSharp {
 		/// 确保当前实例未被释放并且确保拥有所需权限
 		/// </summary>
 		/// <param name="requireAccess">需要的权限</param>
+		/// <returns></returns>
 		public bool QuickDemandNoThrow(ProcessAccess requireAccess) {
 			if (_isDisposed)
 				throw new ObjectDisposedException(nameof(NativeProcess));
