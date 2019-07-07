@@ -24,7 +24,7 @@ namespace NativeSharp {
 		/// <param name="process">Win32进程</param>
 		/// <param name="handle">模块句柄</param>
 		public NativeModule(NativeProcess process, IntPtr handle) {
-			if (process == null)
+			if (process is null)
 				throw new ArgumentNullException(nameof(process));
 
 			_process = process;

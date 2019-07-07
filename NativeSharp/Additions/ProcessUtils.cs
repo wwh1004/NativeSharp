@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Text;
 using static NativeSharp.NativeMethods;
 
@@ -15,7 +16,7 @@ namespace NativeSharp {
 
 			buffer = null;
 			do {
-				if (buffer == null)
+				if (buffer is null)
 					buffer = new uint[0x200];
 				else
 					buffer = new uint[buffer.Length * 2];
@@ -66,6 +67,11 @@ namespace NativeSharp {
 					return moduleHandles[i];
 			}
 			return IntPtr.Zero;
+		}
+
+		internal static void ThrowWin32ExceptionIfFalse(bool result) {
+			if (!result)
+				throw new Win32Exception();
 		}
 	}
 }

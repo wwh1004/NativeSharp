@@ -242,7 +242,7 @@ namespace NativeSharp {
 				throw new ArgumentOutOfRangeException(nameof(clrVersion));
 			}
 			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
-			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument == null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
+			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
 			if (pEnvironment == IntPtr.Zero)
 				return IntPtr.Zero;
 			try {
@@ -280,7 +280,7 @@ namespace NativeSharp {
 		private static byte[] GetMachineCodeTemplate(string clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
 			byte[] buffer;
 
-			using (MemoryStream stream = new MemoryStream(0x1000 + (argument == null ? 0 : argument.Length * 2))) {
+			using (MemoryStream stream = new MemoryStream(0x1000 + (argument is null ? 0 : argument.Length * 2))) {
 				buffer = Encoding.Unicode.GetBytes(assemblyPath);
 				stream.Position = AssemblyPathOffset;
 				stream.Write(buffer, 0, buffer.Length);
@@ -293,7 +293,7 @@ namespace NativeSharp {
 				stream.Position = MethodNameOffset;
 				stream.Write(buffer, 0, buffer.Length);
 				// methodName
-				buffer = argument == null ? new byte[0] : Encoding.Unicode.GetBytes(argument);
+				buffer = argument is null ? new byte[0] : Encoding.Unicode.GetBytes(argument);
 				stream.Position = ArgumentOffset;
 				stream.Write(buffer, 0, buffer.Length);
 				// argument

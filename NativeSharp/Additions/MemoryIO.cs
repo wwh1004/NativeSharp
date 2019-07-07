@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using static NativeSharp.NativeMethods;
@@ -66,7 +67,7 @@ namespace NativeSharp {
 		/// <param name="offsets">多级偏移</param>
 		public Pointer(string moduleName, uint moduleOffset, params uint[] offsets) {
 			if (string.IsNullOrEmpty(moduleName))
-				throw new ArgumentOutOfRangeException();
+				throw new ArgumentNullException(nameof(moduleName));
 
 			_moduleName = moduleName;
 			_moduleOffset = moduleOffset;
@@ -103,7 +104,7 @@ namespace NativeSharp {
 				_baseAddress = basePointer._baseAddress;
 				break;
 			default:
-				throw new ArgumentOutOfRangeException(nameof(basePointer._type));
+				throw new ArgumentOutOfRangeException(nameof(_type));
 			}
 			baseLength = basePointer._offsets.Length;
 			if (baseLength == 0) {
@@ -122,17 +123,755 @@ namespace NativeSharp {
 	}
 
 	unsafe partial class NativeProcess {
-		private static bool GetPointerAddress(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		#region pointer
+		/// <summary>
+		/// 获取指针指向的地址
+		/// </summary>
+		/// <param name="pointer">指针</param>
+		/// <returns></returns>
+		public IntPtr ToAddress(Pointer pointer) {
+			if (pointer is null)
+				throw new ArgumentNullException(nameof(pointer));
+
+			IntPtr address;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ToAddressInternal(_handle, pointer, out address));
+			return address;
+		}
+
+		/// <summary>
+		/// 获取指针指向的地址
+		/// </summary>
+		/// <param name="pointer">指针</param>
+		/// <param name="address"></param>
+		/// <returns></returns>
+		public bool TryToAddress(Pointer pointer, out IntPtr address) {
+			address = default;
+			if (pointer is null)
+				return false;
+
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ToAddressInternal(_handle, pointer, out address);
+		}
+		#endregion
+
+		#region read
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public byte ReadByte(IntPtr address) {
+			byte value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadByteInternal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public short ReadInt16(IntPtr address) {
+			short value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadInt16Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public ushort ReadUInt16(IntPtr address) {
+			ushort value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadUInt16Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public int ReadInt32(IntPtr address) {
+			int value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadInt32Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public uint ReadUInt32(IntPtr address) {
+			uint value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadUInt32Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public long ReadInt64(IntPtr address) {
+			long value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadInt64Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public ulong ReadUInt64(IntPtr address) {
+			ulong value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadUInt64Internal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public float ReadSingle(IntPtr address) {
+			float value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadSingleInternal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public double ReadDouble(IntPtr address) {
+			double value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadDoubleInternal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void ReadBytes(IntPtr address, byte[] value) {
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+
+			ReadBytes(address, value, 0, (uint)value.Length);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <returns></returns>
+		public void ReadBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
+			ReadBytes(address, value, startIndex, length, out _);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <param name="readCount">实际读取字节数</param>
+		public void ReadBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (startIndex > value.Length)
+				throw new ArgumentOutOfRangeException(nameof(startIndex));
+			if (startIndex + length > value.Length)
+				throw new ArgumentOutOfRangeException(nameof(length));
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadBytesInternal(_handle, address, value, startIndex, length, out readCount));
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
+		/// <param name="fromEncoding">内存中字符串的编码</param>
+		/// <returns></returns>
+		public string ReadString(IntPtr address, bool isEndWithDoubleZero, Encoding fromEncoding) {
+			if (fromEncoding is null)
+				throw new ArgumentNullException(nameof(fromEncoding));
+
+			string value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadStringInternal(_handle, address, out value, isEndWithDoubleZero, fromEncoding));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadByte(IntPtr address, out byte value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadByteInternal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadInt16(IntPtr address, out short value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadInt16Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadUInt16(IntPtr address, out ushort value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadUInt16Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadInt32(IntPtr address, out int value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadInt32Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadUInt32(IntPtr address, out uint value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadUInt32Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadInt64(IntPtr address, out long value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadInt64Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadUInt64(IntPtr address, out ulong value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadUInt64Internal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadSingle(IntPtr address, out float value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadSingleInternal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadDouble(IntPtr address, out double value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadDoubleInternal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadBytes(IntPtr address, byte[] value) {
+			if (value is null)
+				return false;
+
+			return TryReadBytes(address, value, 0, (uint)value.Length);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <returns></returns>
+		public bool TryReadBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
+			return TryReadBytes(address, value, startIndex, length, out _);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <param name="readCount">实际读取字节数</param>
+		/// <returns></returns>
+		public bool TryReadBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
+			readCount = default;
+			if (value is null)
+				return false;
+			if (startIndex > value.Length)
+				return false;
+			if (startIndex + length > value.Length)
+				return false;
+
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadBytesInternal(_handle, address, value, startIndex, length, out readCount);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
+		/// <param name="fromEncoding">内存中字符串的编码</param>
+		/// <returns></returns>
+		public bool TryReadString(IntPtr address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
+			value = default;
+			if (fromEncoding is null)
+				return false;
+
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadStringInternal(_handle, address, out value, isEndWithDoubleZero, fromEncoding);
+		}
+		#endregion
+
+		#region write
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteByte(IntPtr address, byte value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteByteInternal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteInt16(IntPtr address, short value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteInt16Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteUInt16(IntPtr address, ushort value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteUInt16Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteInt32(IntPtr address, int value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteInt32Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteUInt32(IntPtr address, uint value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteUInt32Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteInt64(IntPtr address, long value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteInt64Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteUInt64(IntPtr address, ulong value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteUInt64Internal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteSingle(IntPtr address, float value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteSingleInternal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteDouble(IntPtr address, double value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteDoubleInternal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public void WriteBytes(IntPtr address, byte[] value) {
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+
+			WriteBytes(address, value, 0, (uint)value.Length);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <returns></returns>
+		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
+			WriteBytes(address, value, startIndex, length, out _);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <param name="writtenCount">实际写入字节数</param>
+		/// <returns></returns>
+		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (startIndex > value.Length)
+				throw new ArgumentOutOfRangeException(nameof(startIndex));
+			if (startIndex + length > value.Length)
+				throw new ArgumentOutOfRangeException(nameof(length));
+
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteBytesInternal(_handle, address, value, startIndex, length, out writtenCount));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="toEncoding">内存中字符串的编码</param>
+		/// <returns></returns>
+		public void WriteString(IntPtr address, string value, Encoding toEncoding) {
+			if (value is null)
+				throw new ArgumentNullException(nameof(value));
+			if (toEncoding is null)
+				throw new ArgumentNullException(nameof(toEncoding));
+
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteStringInternal(_handle, address, value, toEncoding));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteByte(IntPtr address, byte value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteByteInternal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteInt16(IntPtr address, short value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteInt16Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteUInt16(IntPtr address, ushort value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteUInt16Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteInt32(IntPtr address, int value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteInt32Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteUInt32(IntPtr address, uint value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteUInt32Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteInt64(IntPtr address, long value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteInt64Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteUInt64(IntPtr address, ulong value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteUInt64Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteSingle(IntPtr address, float value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteSingleInternal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteDouble(IntPtr address, double value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteDoubleInternal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteBytes(IntPtr address, byte[] value) {
+			if (value is null)
+				return false;
+
+			return TryWriteBytes(address, value, 0, (uint)value.Length);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <returns></returns>
+		public bool TryWriteBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
+			return TryWriteBytes(address, value, startIndex, length, out _);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
+		/// <param name="length">长度</param>
+		/// <param name="writtenCount">实际写入字节数</param>
+		/// <returns></returns>
+		public bool TryWriteBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
+			writtenCount = default;
+			if (value is null)
+				return false;
+			if (startIndex > value.Length)
+				return false;
+			if (startIndex + length > value.Length)
+				return false;
+
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteBytesInternal(_handle, address, value, startIndex, length, out writtenCount);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <param name="toEncoding">内存中字符串的编码</param>
+		/// <returns></returns>
+		public bool TryWriteString(IntPtr address, string value, Encoding toEncoding) {
+			if (value is null)
+				return false;
+			if (toEncoding is null)
+				return false;
+
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteStringInternal(_handle, address, value, toEncoding);
+		}
+		#endregion
+
+		#region pointer impl
+		internal static bool ToAddressInternal(IntPtr processHandle, Pointer pointer, out IntPtr address) {
 			bool is64Bit;
 
 			if (!Is64BitProcessInternal(processHandle, out is64Bit)) {
 				address = IntPtr.Zero;
 				return false;
 			}
-			return is64Bit ? GetPointerAddress64(processHandle, pointer, out address) : GetPointerAddress32(processHandle, pointer, out address);
+			return is64Bit ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
 		}
 
-		private static bool GetPointerAddress32(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		private static bool ToAddressPrivate32(IntPtr processHandle, Pointer pointer, out IntPtr address) {
 			uint newAddress;
 			uint[] offsets;
 
@@ -157,7 +896,7 @@ namespace NativeSharp {
 			return true;
 		}
 
-		private static bool GetPointerAddress64(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		private static bool ToAddressPrivate64(IntPtr processHandle, Pointer pointer, out IntPtr address) {
 			ulong newAddress;
 			uint[] offsets;
 
@@ -180,619 +919,6 @@ namespace NativeSharp {
 			}
 			address = (IntPtr)newAddress;
 			return true;
-		}
-
-		#region read
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadByte(IntPtr address, out byte value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadByteInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt16(IntPtr address, out short value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadInt16Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt16(IntPtr address, out ushort value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadUInt16Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt32(IntPtr address, out int value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadInt32Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt32(IntPtr address, out uint value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadUInt32Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt64(IntPtr address, out long value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadInt64Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt64(IntPtr address, out ulong value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadUInt64Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadSingle(IntPtr address, out float value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadSingleInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadDouble(IntPtr address, out double value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadDoubleInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadBytes(IntPtr address, byte[] value) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadBytesInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="readCount">实际读取字节数</param>
-		/// <returns></returns>
-		public bool ReadBytes(IntPtr address, byte[] value, out uint readCount) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadBytesInternal(_handle, address, value, out readCount);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
-		/// <param name="fromEncoding">内存中字符串的编码</param>
-		/// <returns></returns>
-		public bool ReadString(IntPtr address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
-			QuickDemand(ProcessAccess.MemoryRead);
-			return ReadStringInternal(_handle, address, out value, isEndWithDoubleZero, fromEncoding);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadByte(Pointer pointer, out byte value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadByteInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt16(Pointer pointer, out short value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadInt16Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt16(Pointer pointer, out ushort value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadUInt16Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt32(Pointer pointer, out int value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadInt32Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt32(Pointer pointer, out uint value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadUInt32Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadInt64(Pointer pointer, out long value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadInt64Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadUInt64(Pointer pointer, out ulong value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadUInt64Internal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadSingle(Pointer pointer, out float value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadSingleInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadDouble(Pointer pointer, out double value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = default;
-				return false;
-			}
-			return ReadDoubleInternal(_handle, address, out value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool ReadBytes(Pointer pointer, byte[] value) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out address) && ReadBytesInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <param name="readCount">实际读取字节数</param>
-		/// <returns></returns>
-		public bool ReadBytes(Pointer pointer, byte[] value, out uint readCount) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				readCount = 0;
-				return false;
-			}
-			return ReadBytesInternal(_handle, address, value, out readCount);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
-		/// <param name="fromEncoding">内存中字符串的编码</param>
-		/// <returns></returns>
-		public bool ReadString(Pointer pointer, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
-			IntPtr address;
-
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out address)) {
-				value = null;
-				return false;
-			}
-			return ReadStringInternal(_handle, address, out value, isEndWithDoubleZero, fromEncoding);
-		}
-		#endregion
-
-		#region write
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteByte(IntPtr address, byte value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteByteInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt16(IntPtr address, short value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteInt16Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt16(IntPtr address, ushort value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteUInt16Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt32(IntPtr address, int value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteInt32Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt32(IntPtr address, uint value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteUInt32Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt64(IntPtr address, long value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteInt64Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt64(IntPtr address, ulong value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteUInt64Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteSingle(IntPtr address, float value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteSingleInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteDouble(IntPtr address, double value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteDoubleInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteBytes(IntPtr address, byte[] value) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteBytesInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="writtenCount">实际写入字节数</param>
-		/// <returns></returns>
-		public bool WriteBytes(IntPtr address, byte[] value, out uint writtenCount) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteBytesInternal(_handle, address, value, out writtenCount);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="toEncoding">内存中字符串的编码</param>
-		/// <returns></returns>
-		public bool WriteString(IntPtr address, string value, Encoding toEncoding) {
-			QuickDemand(ProcessAccess.MemoryWrite);
-			return WriteStringInternal(_handle, address, value, toEncoding);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteByte(Pointer pointer, byte value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteByteInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt16(Pointer pointer, short value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteInt16Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt16(Pointer pointer, ushort value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteUInt16Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt32(Pointer pointer, int value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteInt32Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt32(Pointer pointer, uint value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteUInt32Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteInt64(Pointer pointer, long value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteInt64Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteUInt64(Pointer pointer, ulong value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteUInt64Internal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteSingle(Pointer pointer, float value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteSingleInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteDouble(Pointer pointer, double value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteDoubleInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <returns></returns>
-		public bool WriteBytes(Pointer pointer, byte[] value) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteBytesInternal(_handle, address, value);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <param name="writtenCount">实际写入字节数</param>
-		/// <returns></returns>
-		public bool WriteBytes(Pointer pointer, byte[] value, out uint writtenCount) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			if (!GetPointerAddress(_handle, pointer, out IntPtr address)) {
-				writtenCount = 0;
-				return false;
-			}
-			return WriteBytesInternal(_handle, address, value, out writtenCount);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="pointer">指针</param>
-		/// <param name="value">值</param>
-		/// <param name="toEncoding">内存中字符串的编码</param>
-		/// <returns></returns>
-		public bool WriteString(Pointer pointer, string value, Encoding toEncoding) {
-			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation);
-			return GetPointerAddress(_handle, pointer, out IntPtr address) && WriteStringInternal(_handle, address, value, toEncoding);
 		}
 		#endregion
 
@@ -843,22 +969,22 @@ namespace NativeSharp {
 		}
 
 		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value) {
-			fixed (void* p = value)
-				return ReadProcessMemory(processHandle, address, p, (uint)value.Length, null);
+			return ReadBytesInternal(processHandle, address, value, 0, (uint)value.Length, out _);
 		}
 
-		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, out uint readCount) {
-			fixed (void* p = value)
+		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length) {
+			return ReadBytesInternal(processHandle, address, value, startIndex, length, out _);
+		}
+
+		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
+			fixed (void* p = &value[startIndex])
 			fixed (uint* pReadCount = &readCount)
-				return ReadProcessMemory(processHandle, address, p, (uint)value.Length, pReadCount);
+				return ReadProcessMemory(processHandle, address, p, length, pReadCount);
 		}
 
 		internal static bool ReadStringInternal(IntPtr processHandle, IntPtr address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
 			// 在出现时一些特殊字符可能导致字符串被过早截取！
 			const uint BASE_BUFFER_SIZE = 0x100;
-
-			if (fromEncoding == null)
-				throw new ArgumentNullException(nameof(fromEncoding));
 
 			uint dummy;
 
@@ -899,7 +1025,7 @@ namespace NativeSharp {
 					}
 					address = (IntPtr)((byte*)address + bufferSize);
 					bufferSize += BASE_BUFFER_SIZE;
-				} while (bytes == null);
+				} while (bytes is null);
 				if (fromEncoding.CodePage != Encoding.Unicode.CodePage)
 					bytes = Encoding.Convert(fromEncoding, Encoding.Unicode, bytes);
 				fixed (void* p = bytes)
@@ -947,22 +1073,20 @@ namespace NativeSharp {
 		}
 
 		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value) {
-			fixed (void* p = value)
-				return WriteProcessMemory(processHandle, address, p, (uint)value.Length, null);
+			return WriteBytesInternal(processHandle, address, value, 0, (uint)value.Length, out _);
 		}
 
-		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, out uint writtenCount) {
-			fixed (void* p = value)
+		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length) {
+			return WriteBytesInternal(processHandle, address, value, startIndex, length, out _);
+		}
+
+		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
+			fixed (void* p = &value[startIndex])
 			fixed (uint* pWrittenCount = &writtenCount)
-				return WriteProcessMemory(processHandle, address, p, (uint)value.Length, pWrittenCount);
+				return WriteProcessMemory(processHandle, address, p, length, pWrittenCount);
 		}
 
 		internal static bool WriteStringInternal(IntPtr processHandle, IntPtr address, string value, Encoding toEncoding) {
-			if (value == null)
-				throw new ArgumentNullException();
-			if (toEncoding == null)
-				throw new ArgumentNullException();
-
 			byte[] buffer;
 
 			value += "\0";

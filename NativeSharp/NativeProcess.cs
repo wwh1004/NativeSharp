@@ -150,14 +150,24 @@ namespace NativeSharp {
 		}
 
 		/// <summary>
-		/// 快速严重当前实例是否有效
+		/// 确保当前实例未被释放并且确保拥有所需权限
 		/// </summary>
 		/// <param name="requireAccess">需要的权限</param>
 		public void QuickDemand(ProcessAccess requireAccess) {
 			if (_isDisposed)
 				throw new ObjectDisposedException(nameof(NativeProcess));
-			if (_access != null && (_access.Value & requireAccess) != requireAccess)
+			if (!(_access is null) && (_access.Value & requireAccess) != requireAccess)
 				throw new NotSupportedException($"CurrentAccess={_access} RequireAccess={requireAccess}");
+		}
+
+		/// <summary>
+		/// 确保当前实例未被释放并且确保拥有所需权限
+		/// </summary>
+		/// <param name="requireAccess">需要的权限</param>
+		public bool QuickDemandNoThrow(ProcessAccess requireAccess) {
+			if (_isDisposed)
+				throw new ObjectDisposedException(nameof(NativeProcess));
+			return _access is null || (_access.Value & requireAccess) == requireAccess;
 		}
 
 		/// <summary />
