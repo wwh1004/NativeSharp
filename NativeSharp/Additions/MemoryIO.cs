@@ -941,7 +941,7 @@ namespace NativeSharp {
 			bool is64Bit;
 
 			if (!Is64BitProcessInternal(processHandle, out is64Bit)) {
-				address = IntPtr.Zero;
+				address = default;
 				return false;
 			}
 			return is64Bit ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
@@ -951,7 +951,7 @@ namespace NativeSharp {
 			uint newAddress;
 			uint[] offsets;
 
-			address = IntPtr.Zero;
+			address = default;
 			if (pointer.Type == PointerType.BaseAddressWithOffset) {
 				if (!ReadUInt32Internal(processHandle, pointer.BaseAddress, out newAddress))
 					return false;
@@ -963,10 +963,13 @@ namespace NativeSharp {
 				newAddress += pointer.ModuleOffset;
 			}
 			offsets = pointer.Offsets;
-			for (int i = 0; i < offsets.Length; i++) {
-				if (!ReadUInt32Internal(processHandle, (IntPtr)newAddress, out newAddress))
-					return false;
-				newAddress += offsets[i];
+			if (offsets.Length > 0) {
+				for (int i = 0; i < offsets.Length - 1; i++) {
+					newAddress += offsets[i];
+					if (!ReadUInt32Internal(processHandle, (IntPtr)newAddress, out newAddress))
+						return false;
+				}
+				newAddress += offsets[offsets.Length - 1];
 			}
 			address = (IntPtr)newAddress;
 			return true;
@@ -976,7 +979,7 @@ namespace NativeSharp {
 			ulong newAddress;
 			uint[] offsets;
 
-			address = IntPtr.Zero;
+			address = default;
 			if (pointer.Type == PointerType.BaseAddressWithOffset) {
 				if (!ReadUInt64Internal(processHandle, pointer.BaseAddress, out newAddress))
 					return false;
@@ -988,10 +991,13 @@ namespace NativeSharp {
 				newAddress += pointer.ModuleOffset;
 			}
 			offsets = pointer.Offsets;
-			for (int i = 0; i < offsets.Length; i++) {
-				if (!ReadUInt64Internal(processHandle, (IntPtr)newAddress, out newAddress))
-					return false;
-				newAddress += offsets[i];
+			if (offsets.Length > 0) {
+				for (int i = 0; i < offsets.Length - 1; i++) {
+					newAddress += offsets[i];
+					if (!ReadUInt64Internal(processHandle, (IntPtr)newAddress, out newAddress))
+						return false;
+				}
+				newAddress += offsets[offsets.Length - 1];
 			}
 			address = (IntPtr)newAddress;
 			return true;
