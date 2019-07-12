@@ -249,6 +249,32 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
+		public IntPtr ReadIntPtr(IntPtr address) {
+			IntPtr value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadIntPtrInternal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public UIntPtr ReadUIntPtr(IntPtr address) {
+			UIntPtr value;
+
+			QuickDemand(ProcessAccess.MemoryRead);
+			ThrowWin32ExceptionIfFalse(ReadUIntPtrInternal(_handle, address, out value));
+			return value;
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
 		public float ReadSingle(IntPtr address) {
 			float value;
 
@@ -428,6 +454,32 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
+		public bool TryReadIntPtr(IntPtr address, out IntPtr value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadIntPtrInternal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryReadUIntPtr(IntPtr address, out UIntPtr value) {
+			value = default;
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
+				return false;
+			return ReadUIntPtrInternal(_handle, address, out value);
+		}
+
+		/// <summary>
+		/// 读取内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
 		public bool TryReadSingle(IntPtr address, out float value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
@@ -591,6 +643,26 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
+		public void WriteIntPtr(IntPtr address, IntPtr value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteIntPtrInternal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		public void WriteUIntPtr(IntPtr address, UIntPtr value) {
+			QuickDemand(ProcessAccess.MemoryWrite);
+			ThrowWin32ExceptionIfFalse(WriteUIntPtrInternal(_handle, address, value));
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
 		public void WriteSingle(IntPtr address, float value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteSingleInternal(_handle, address, value));
@@ -747,6 +819,30 @@ namespace NativeSharp {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteUInt64Internal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteIntPtr(IntPtr address, IntPtr value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteIntPtrInternal(_handle, address, value);
+		}
+
+		/// <summary>
+		/// 写入内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="value">值</param>
+		/// <returns></returns>
+		public bool TryWriteUIntPtr(IntPtr address, UIntPtr value) {
+			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
+				return false;
+			return WriteUIntPtrInternal(_handle, address, value);
 		}
 
 		/// <summary>
@@ -938,6 +1034,16 @@ namespace NativeSharp {
 				return ReadProcessMemory(processHandle, address, p, 8, null);
 		}
 
+		internal static bool ReadIntPtrInternal(IntPtr processHandle, IntPtr address, out IntPtr value) {
+			fixed (void* p = &value)
+				return ReadProcessMemory(processHandle, address, p, (uint)IntPtr.Size, null);
+		}
+
+		internal static bool ReadUIntPtrInternal(IntPtr processHandle, IntPtr address, out UIntPtr value) {
+			fixed (void* p = &value)
+				return ReadProcessMemory(processHandle, address, p, (uint)UIntPtr.Size, null);
+		}
+
 		internal static bool ReadSingleInternal(IntPtr processHandle, IntPtr address, out float value) {
 			fixed (void* p = &value)
 				return ReadProcessMemory(processHandle, address, p, 4, null);
@@ -1042,6 +1148,14 @@ namespace NativeSharp {
 
 		internal static bool WriteUInt64Internal(IntPtr processHandle, IntPtr address, ulong value) {
 			return WriteProcessMemory(processHandle, address, &value, 8, null);
+		}
+
+		internal static bool WriteIntPtrInternal(IntPtr processHandle, IntPtr address, IntPtr value) {
+			return WriteProcessMemory(processHandle, address, &value, (uint)IntPtr.Size, null);
+		}
+
+		internal static bool WriteUIntPtrInternal(IntPtr processHandle, IntPtr address, UIntPtr value) {
+			return WriteProcessMemory(processHandle, address, &value, (uint)UIntPtr.Size, null);
 		}
 
 		internal static bool WriteSingleInternal(IntPtr processHandle, IntPtr address, float value) {
