@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -16,10 +15,10 @@ namespace NativeSharp {
 		public struct MEMORY_BASIC_INFORMATION {
 			public static readonly uint UnmanagedSize = (uint)sizeof(MEMORY_BASIC_INFORMATION);
 
-			public IntPtr BaseAddress;
-			public IntPtr AllocationBase;
+			public void* BaseAddress;
+			public void* AllocationBase;
 			public uint AllocationProtect;
-			public IntPtr RegionSize;
+			public void* RegionSize;
 			public uint State;
 			public uint Protect;
 			public uint Type;
@@ -43,32 +42,32 @@ namespace NativeSharp {
 		}
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
+		public static extern void* OpenProcess(uint dwDesiredAccess, bool bInheritHandle, uint dwProcessId);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool CloseHandle(IntPtr hObject);
+		public static extern bool CloseHandle(void* hObject);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		public static extern uint GetCurrentProcessId();
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern uint GetProcessId(IntPtr Process);
+		public static extern uint GetProcessId(void* Process);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern IntPtr GetCurrentProcess();
-
-		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool IsWow64Process(IntPtr hProcess, [MarshalAs(UnmanagedType.Bool)] out bool Wow64Process);
+		public static extern void* GetCurrentProcess();
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool ReadProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, void* lpBuffer, uint nSize, uint* lpNumberOfBytesRead);
+		public static extern bool IsWow64Process(void* hProcess, [MarshalAs(UnmanagedType.Bool)] out bool Wow64Process);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool WriteProcessMemory(IntPtr hProcess, IntPtr lpBaseAddress, void* lpBuffer, uint nSize, uint* lpNumberOfBytesWritten);
+		public static extern bool ReadProcessMemory(void* hProcess, void* lpBaseAddress, void* lpBuffer, uint nSize, uint* lpNumberOfBytesRead);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool WriteProcessMemory(void* hProcess, void* lpBaseAddress, void* lpBuffer, uint nSize, uint* lpNumberOfBytesWritten);
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
@@ -76,39 +75,39 @@ namespace NativeSharp {
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool EnumProcessModulesEx(IntPtr hProcess, IntPtr* lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
+		public static extern bool EnumProcessModulesEx(void* hProcess, void** lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetProcessImageFileName(IntPtr hProcess, StringBuilder lpImageFileName, uint nSize);
+		public static extern bool GetProcessImageFileName(void* hProcess, StringBuilder lpImageFileName, uint nSize);
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetModuleBaseName(IntPtr hProcess, IntPtr hModule, StringBuilder lpBaseName, uint nSize);
+		public static extern bool GetModuleBaseName(void* hProcess, void* hModule, StringBuilder lpBaseName, uint nSize);
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetModuleFileNameEx(IntPtr hProcess, IntPtr hModule, StringBuilder lpFilename, uint nSize);
+		public static extern bool GetModuleFileNameEx(void* hProcess, void* hModule, StringBuilder lpFilename, uint nSize);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern IntPtr VirtualAllocEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
-
-		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool VirtualFreeEx(IntPtr hProcess, IntPtr lpAddress, uint dwSize, uint dwFreeType);
+		public static extern void* VirtualAllocEx(void* hProcess, void* lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool VirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength);
-
-		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern IntPtr CreateRemoteThread(IntPtr hProcess, void* lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, uint* lpThreadId);
-
-		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
-		public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
+		public static extern bool VirtualFreeEx(void* hProcess, void* lpAddress, uint dwSize, uint dwFreeType);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetExitCodeThread(IntPtr hThread, out uint lpExitCode);
+		public static extern bool VirtualQueryEx(void* hProcess, void* lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		public static extern void* CreateRemoteThread(void* hProcess, void* lpThreadAttributes, uint dwStackSize, void* lpStartAddress, void* lpParameter, uint dwCreationFlags, uint* lpThreadId);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		public static extern uint WaitForSingleObject(void* hHandle, uint dwMilliseconds);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool GetExitCodeThread(void* hThread, out uint lpExitCode);
 	}
 }

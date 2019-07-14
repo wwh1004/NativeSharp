@@ -30,7 +30,7 @@ namespace NativeSharp {
 			return processIds;
 		}
 
-		internal static bool Is64BitProcessInternal(IntPtr processHandle, out bool is64Bit) {
+		internal static bool Is64BitProcessInternal(void* processHandle, out bool is64Bit) {
 			bool isWow64;
 
 			if (!NativeEnvironment.Is64BitOperatingSystem) {
@@ -45,28 +45,28 @@ namespace NativeSharp {
 			return true;
 		}
 
-		internal static IntPtr GetModuleHandleInternal(IntPtr processHandle, bool first, string moduleName) {
-			IntPtr moduleHandle;
+		internal static void* GetModuleHandleInternal(void* processHandle, bool first, string moduleName) {
+			void* moduleHandle;
 			uint size;
-			IntPtr[] moduleHandles;
+			void*[] moduleHandles;
 			StringBuilder moduleNameBuffer;
 
 			if (!EnumProcessModulesEx(processHandle, &moduleHandle, (uint)IntPtr.Size, out size, LIST_MODULES_ALL))
-				return IntPtr.Zero;
+				return null;
 			if (first)
 				return moduleHandle;
-			moduleHandles = new IntPtr[size / IntPtr.Size];
-			fixed (IntPtr* p = moduleHandles)
+			moduleHandles = new void*[size / (uint)IntPtr.Size];
+			fixed (void** p = moduleHandles)
 				if (!EnumProcessModulesEx(processHandle, p, size, out _, LIST_MODULES_ALL))
-					return IntPtr.Zero;
+					return null;
 			moduleNameBuffer = new StringBuilder((int)MAX_MODULE_NAME32);
 			for (int i = 0; i < moduleHandles.Length; i++) {
 				if (!GetModuleBaseName(processHandle, moduleHandles[i], moduleNameBuffer, MAX_MODULE_NAME32))
-					return IntPtr.Zero;
+					return null;
 				if (moduleNameBuffer.ToString().Equals(moduleName, StringComparison.OrdinalIgnoreCase))
 					return moduleHandles[i];
 			}
-			return IntPtr.Zero;
+			return null;
 		}
 
 		internal static void ThrowWin32ExceptionIfFalse(bool result) {

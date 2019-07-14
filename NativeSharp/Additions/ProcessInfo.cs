@@ -41,16 +41,16 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public NativeModule[] GetModules() {
-			IntPtr moduleHandle;
+			void* moduleHandle;
 			uint size;
-			IntPtr[] moduleHandles;
+			void*[] moduleHandles;
 			NativeModule[] modules;
 
 			QuickDemand(ProcessAccess.QueryInformation);
 			if (!EnumProcessModulesEx(_handle, &moduleHandle, (uint)IntPtr.Size, out size, LIST_MODULES_ALL))
 				return null;
-			moduleHandles = new IntPtr[size / IntPtr.Size];
-			fixed (IntPtr* p = moduleHandles)
+			moduleHandles = new void*[size / (uint)IntPtr.Size];
+			fixed (void** p = moduleHandles)
 				if (!EnumProcessModulesEx(_handle, p, size, out _, LIST_MODULES_ALL))
 					return null;
 			modules = new NativeModule[moduleHandles.Length];
@@ -64,11 +64,11 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public NativeModule GetMainModule() {
-			IntPtr moduleHandle;
+			void* moduleHandle;
 
 			QuickDemand(ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, true, null);
-			return moduleHandle == IntPtr.Zero ? null : UnsafeGetModule(moduleHandle);
+			return moduleHandle is null ? null : UnsafeGetModule(moduleHandle);
 		}
 
 		/// <summary>
@@ -80,11 +80,11 @@ namespace NativeSharp {
 			if (string.IsNullOrEmpty(moduleName))
 				throw new ArgumentNullException(nameof(moduleName));
 
-			IntPtr moduleHandle;
+			void* moduleHandle;
 
 			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, false, moduleName);
-			return moduleHandle == IntPtr.Zero ? null : UnsafeGetModule(moduleHandle);
+			return moduleHandle is null ? null : UnsafeGetModule(moduleHandle);
 		}
 
 		/// <summary>
@@ -92,8 +92,8 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="moduleHandle">模块句柄</param>
 		/// <returns></returns>
-		public NativeModule UnsafeGetModule(IntPtr moduleHandle) {
-			if (moduleHandle == IntPtr.Zero)
+		public NativeModule UnsafeGetModule(void* moduleHandle) {
+			if (moduleHandle is null)
 				return null;
 
 			return new NativeModule(this, moduleHandle);

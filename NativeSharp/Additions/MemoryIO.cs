@@ -23,10 +23,10 @@ namespace NativeSharp {
 	/// <summary>
 	/// 指针
 	/// </summary>
-	public sealed class Pointer {
+	public unsafe sealed class Pointer {
 		private string _moduleName;
 		private uint _moduleOffset;
-		private IntPtr _baseAddress;
+		private void* _baseAddress;
 		private PointerType _type;
 		private readonly List<uint> _offsets;
 
@@ -61,7 +61,7 @@ namespace NativeSharp {
 		/// <summary>
 		/// 基址
 		/// </summary>
-		public IntPtr BaseAddress {
+		public void* BaseAddress {
 			get {
 				ThrowIfTypeError(PointerType.BaseAddressWithOffset);
 				return _baseAddress;
@@ -103,7 +103,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="baseAddress">基址</param>
 		/// <param name="offsets">偏移</param>
-		public Pointer(IntPtr baseAddress, params uint[] offsets) {
+		public Pointer(void* baseAddress, params uint[] offsets) {
 			_baseAddress = baseAddress;
 			_offsets = new List<uint>(offsets);
 			_type = PointerType.BaseAddressWithOffset;
@@ -144,11 +144,11 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="pointer">指针</param>
 		/// <returns></returns>
-		public IntPtr ToAddress(Pointer pointer) {
+		public void* ToAddress(Pointer pointer) {
 			if (pointer is null)
 				throw new ArgumentNullException(nameof(pointer));
 
-			IntPtr address;
+			void* address;
 
 			QuickDemand(ProcessAccess.MemoryRead);
 			ThrowWin32ExceptionIfFalse(ToAddressInternal(_handle, pointer, out address));
@@ -161,7 +161,7 @@ namespace NativeSharp {
 		/// <param name="pointer">指针</param>
 		/// <param name="address"></param>
 		/// <returns></returns>
-		public bool TryToAddress(Pointer pointer, out IntPtr address) {
+		public bool TryToAddress(Pointer pointer, out void* address) {
 			address = default;
 			if (pointer is null)
 				return false;
@@ -178,7 +178,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public byte ReadByte(IntPtr address) {
+		public byte ReadByte(void* address) {
 			byte value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -191,7 +191,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public short ReadInt16(IntPtr address) {
+		public short ReadInt16(void* address) {
 			short value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -204,7 +204,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public ushort ReadUInt16(IntPtr address) {
+		public ushort ReadUInt16(void* address) {
 			ushort value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -217,7 +217,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public int ReadInt32(IntPtr address) {
+		public int ReadInt32(void* address) {
 			int value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -230,7 +230,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public uint ReadUInt32(IntPtr address) {
+		public uint ReadUInt32(void* address) {
 			uint value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -243,7 +243,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public long ReadInt64(IntPtr address) {
+		public long ReadInt64(void* address) {
 			long value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -256,7 +256,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public ulong ReadUInt64(IntPtr address) {
+		public ulong ReadUInt64(void* address) {
 			ulong value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -269,7 +269,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public IntPtr ReadIntPtr(IntPtr address) {
+		public IntPtr ReadIntPtr(void* address) {
 			IntPtr value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -282,7 +282,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public UIntPtr ReadUIntPtr(IntPtr address) {
+		public UIntPtr ReadUIntPtr(void* address) {
 			UIntPtr value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -295,7 +295,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public float ReadSingle(IntPtr address) {
+		public float ReadSingle(void* address) {
 			float value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -308,7 +308,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public double ReadDouble(IntPtr address) {
+		public double ReadDouble(void* address) {
 			double value;
 
 			QuickDemand(ProcessAccess.MemoryRead);
@@ -321,7 +321,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void ReadBytes(IntPtr address, byte[] value) {
+		public void ReadBytes(void* address, byte[] value) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 
@@ -335,19 +335,7 @@ namespace NativeSharp {
 		/// <param name="value">值</param>
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
-		public void ReadBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
-			ReadBytes(address, value, startIndex, length, out _);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
-		/// <param name="length">长度</param>
-		/// <param name="readCount">实际读取字节数</param>
-		public void ReadBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
+		public void ReadBytes(void* address, byte[] value, uint startIndex, uint length) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 			if (startIndex > value.Length)
@@ -356,7 +344,7 @@ namespace NativeSharp {
 				throw new ArgumentOutOfRangeException(nameof(length));
 
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadBytesInternal(_handle, address, value, startIndex, length, out readCount));
+			ThrowWin32ExceptionIfFalse(ReadBytesInternal(_handle, address, value, startIndex, length));
 		}
 
 		/// <summary>
@@ -366,7 +354,7 @@ namespace NativeSharp {
 		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
 		/// <param name="fromEncoding">内存中字符串的编码</param>
 		/// <returns></returns>
-		public string ReadString(IntPtr address, bool isEndWithDoubleZero, Encoding fromEncoding) {
+		public string ReadString(void* address, bool isEndWithDoubleZero, Encoding fromEncoding) {
 			if (fromEncoding is null)
 				throw new ArgumentNullException(nameof(fromEncoding));
 
@@ -383,7 +371,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadByte(IntPtr address, out byte value) {
+		public bool TryReadByte(void* address, out byte value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -396,7 +384,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadInt16(IntPtr address, out short value) {
+		public bool TryReadInt16(void* address, out short value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -409,7 +397,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadUInt16(IntPtr address, out ushort value) {
+		public bool TryReadUInt16(void* address, out ushort value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -422,7 +410,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadInt32(IntPtr address, out int value) {
+		public bool TryReadInt32(void* address, out int value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -435,7 +423,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadUInt32(IntPtr address, out uint value) {
+		public bool TryReadUInt32(void* address, out uint value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -448,7 +436,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadInt64(IntPtr address, out long value) {
+		public bool TryReadInt64(void* address, out long value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -461,7 +449,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadUInt64(IntPtr address, out ulong value) {
+		public bool TryReadUInt64(void* address, out ulong value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -474,7 +462,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadIntPtr(IntPtr address, out IntPtr value) {
+		public bool TryReadIntPtr(void* address, out IntPtr value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -487,7 +475,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadUIntPtr(IntPtr address, out UIntPtr value) {
+		public bool TryReadUIntPtr(void* address, out UIntPtr value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -500,7 +488,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadSingle(IntPtr address, out float value) {
+		public bool TryReadSingle(void* address, out float value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -513,7 +501,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadDouble(IntPtr address, out double value) {
+		public bool TryReadDouble(void* address, out double value) {
 			value = default;
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
@@ -526,7 +514,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryReadBytes(IntPtr address, byte[] value) {
+		public bool TryReadBytes(void* address, byte[] value) {
 			if (value is null)
 				return false;
 
@@ -541,21 +529,7 @@ namespace NativeSharp {
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
 		/// <returns></returns>
-		public bool TryReadBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
-			return TryReadBytes(address, value, startIndex, length, out _);
-		}
-
-		/// <summary>
-		/// 读取内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
-		/// <param name="length">长度</param>
-		/// <param name="readCount">实际读取字节数</param>
-		/// <returns></returns>
-		public bool TryReadBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
-			readCount = default;
+		public bool TryReadBytes(void* address, byte[] value, uint startIndex, uint length) {
 			if (value is null)
 				return false;
 			if (startIndex > value.Length)
@@ -565,7 +539,7 @@ namespace NativeSharp {
 
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryRead))
 				return false;
-			return ReadBytesInternal(_handle, address, value, startIndex, length, out readCount);
+			return ReadBytesInternal(_handle, address, value, startIndex, length);
 		}
 
 		/// <summary>
@@ -576,7 +550,7 @@ namespace NativeSharp {
 		/// <param name="isEndWithDoubleZero">字符串是否以2个\0结尾</param>
 		/// <param name="fromEncoding">内存中字符串的编码</param>
 		/// <returns></returns>
-		public bool TryReadString(IntPtr address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
+		public bool TryReadString(void* address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
 			value = default;
 			if (fromEncoding is null)
 				return false;
@@ -593,7 +567,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteByte(IntPtr address, byte value) {
+		public void WriteByte(void* address, byte value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteByteInternal(_handle, address, value));
 		}
@@ -603,7 +577,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteInt16(IntPtr address, short value) {
+		public void WriteInt16(void* address, short value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt16Internal(_handle, address, value));
 		}
@@ -613,7 +587,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteUInt16(IntPtr address, ushort value) {
+		public void WriteUInt16(void* address, ushort value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt16Internal(_handle, address, value));
 		}
@@ -623,7 +597,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteInt32(IntPtr address, int value) {
+		public void WriteInt32(void* address, int value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt32Internal(_handle, address, value));
 		}
@@ -633,7 +607,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteUInt32(IntPtr address, uint value) {
+		public void WriteUInt32(void* address, uint value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt32Internal(_handle, address, value));
 		}
@@ -643,7 +617,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteInt64(IntPtr address, long value) {
+		public void WriteInt64(void* address, long value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteInt64Internal(_handle, address, value));
 		}
@@ -653,7 +627,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteUInt64(IntPtr address, ulong value) {
+		public void WriteUInt64(void* address, ulong value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUInt64Internal(_handle, address, value));
 		}
@@ -663,7 +637,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteIntPtr(IntPtr address, IntPtr value) {
+		public void WriteIntPtr(void* address, IntPtr value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteIntPtrInternal(_handle, address, value));
 		}
@@ -673,7 +647,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteUIntPtr(IntPtr address, UIntPtr value) {
+		public void WriteUIntPtr(void* address, UIntPtr value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteUIntPtrInternal(_handle, address, value));
 		}
@@ -683,7 +657,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteSingle(IntPtr address, float value) {
+		public void WriteSingle(void* address, float value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteSingleInternal(_handle, address, value));
 		}
@@ -693,7 +667,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteDouble(IntPtr address, double value) {
+		public void WriteDouble(void* address, double value) {
 			QuickDemand(ProcessAccess.MemoryWrite);
 			ThrowWin32ExceptionIfFalse(WriteDoubleInternal(_handle, address, value));
 		}
@@ -703,7 +677,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
-		public void WriteBytes(IntPtr address, byte[] value) {
+		public void WriteBytes(void* address, byte[] value) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 
@@ -717,19 +691,7 @@ namespace NativeSharp {
 		/// <param name="value">值</param>
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
-		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
-			WriteBytes(address, value, startIndex, length, out _);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
-		/// <param name="length">长度</param>
-		/// <param name="writtenCount">实际写入字节数</param>
-		public void WriteBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
+		public void WriteBytes(void* address, byte[] value, uint startIndex, uint length) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 			if (startIndex > value.Length)
@@ -738,7 +700,7 @@ namespace NativeSharp {
 				throw new ArgumentOutOfRangeException(nameof(length));
 
 			QuickDemand(ProcessAccess.MemoryWrite);
-			ThrowWin32ExceptionIfFalse(WriteBytesInternal(_handle, address, value, startIndex, length, out writtenCount));
+			ThrowWin32ExceptionIfFalse(WriteBytesInternal(_handle, address, value, startIndex, length));
 		}
 
 		/// <summary>
@@ -747,7 +709,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <param name="toEncoding">内存中字符串的编码</param>
-		public void WriteString(IntPtr address, string value, Encoding toEncoding) {
+		public void WriteString(void* address, string value, Encoding toEncoding) {
 			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 			if (toEncoding is null)
@@ -763,7 +725,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteByte(IntPtr address, byte value) {
+		public bool TryWriteByte(void* address, byte value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteByteInternal(_handle, address, value);
@@ -775,7 +737,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteInt16(IntPtr address, short value) {
+		public bool TryWriteInt16(void* address, short value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteInt16Internal(_handle, address, value);
@@ -787,7 +749,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteUInt16(IntPtr address, ushort value) {
+		public bool TryWriteUInt16(void* address, ushort value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteUInt16Internal(_handle, address, value);
@@ -799,7 +761,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteInt32(IntPtr address, int value) {
+		public bool TryWriteInt32(void* address, int value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteInt32Internal(_handle, address, value);
@@ -811,7 +773,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteUInt32(IntPtr address, uint value) {
+		public bool TryWriteUInt32(void* address, uint value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteUInt32Internal(_handle, address, value);
@@ -823,7 +785,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteInt64(IntPtr address, long value) {
+		public bool TryWriteInt64(void* address, long value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteInt64Internal(_handle, address, value);
@@ -835,7 +797,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteUInt64(IntPtr address, ulong value) {
+		public bool TryWriteUInt64(void* address, ulong value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteUInt64Internal(_handle, address, value);
@@ -847,7 +809,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteIntPtr(IntPtr address, IntPtr value) {
+		public bool TryWriteIntPtr(void* address, IntPtr value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteIntPtrInternal(_handle, address, value);
@@ -859,7 +821,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteUIntPtr(IntPtr address, UIntPtr value) {
+		public bool TryWriteUIntPtr(void* address, UIntPtr value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteUIntPtrInternal(_handle, address, value);
@@ -871,7 +833,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteSingle(IntPtr address, float value) {
+		public bool TryWriteSingle(void* address, float value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteSingleInternal(_handle, address, value);
@@ -883,7 +845,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteDouble(IntPtr address, double value) {
+		public bool TryWriteDouble(void* address, double value) {
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
 			return WriteDoubleInternal(_handle, address, value);
@@ -895,7 +857,7 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <param name="value">值</param>
 		/// <returns></returns>
-		public bool TryWriteBytes(IntPtr address, byte[] value) {
+		public bool TryWriteBytes(void* address, byte[] value) {
 			if (value is null)
 				return false;
 
@@ -910,21 +872,7 @@ namespace NativeSharp {
 		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
 		/// <param name="length">长度</param>
 		/// <returns></returns>
-		public bool TryWriteBytes(IntPtr address, byte[] value, uint startIndex, uint length) {
-			return TryWriteBytes(address, value, startIndex, length, out _);
-		}
-
-		/// <summary>
-		/// 写入内存
-		/// </summary>
-		/// <param name="address">地址</param>
-		/// <param name="value">值</param>
-		/// <param name="startIndex">从 <paramref name="value"/> 的指定偏移处开始</param>
-		/// <param name="length">长度</param>
-		/// <param name="writtenCount">实际写入字节数</param>
-		/// <returns></returns>
-		public bool TryWriteBytes(IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
-			writtenCount = default;
+		public bool TryWriteBytes(void* address, byte[] value, uint startIndex, uint length) {
 			if (value is null)
 				return false;
 			if (startIndex > value.Length)
@@ -934,7 +882,7 @@ namespace NativeSharp {
 
 			if (!QuickDemandNoThrow(ProcessAccess.MemoryWrite))
 				return false;
-			return WriteBytesInternal(_handle, address, value, startIndex, length, out writtenCount);
+			return WriteBytesInternal(_handle, address, value, startIndex, length);
 		}
 
 		/// <summary>
@@ -944,7 +892,7 @@ namespace NativeSharp {
 		/// <param name="value">值</param>
 		/// <param name="toEncoding">内存中字符串的编码</param>
 		/// <returns></returns>
-		public bool TryWriteString(IntPtr address, string value, Encoding toEncoding) {
+		public bool TryWriteString(void* address, string value, Encoding toEncoding) {
 			if (value is null)
 				return false;
 			if (toEncoding is null)
@@ -957,7 +905,7 @@ namespace NativeSharp {
 		#endregion
 
 		#region pointer impl
-		internal static bool ToAddressInternal(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		internal static bool ToAddressInternal(void* processHandle, Pointer pointer, out void* address) {
 			bool is64Bit;
 
 			if (!Is64BitProcessInternal(processHandle, out is64Bit)) {
@@ -967,7 +915,7 @@ namespace NativeSharp {
 			return is64Bit ? ToAddressPrivate64(processHandle, pointer, out address) : ToAddressPrivate32(processHandle, pointer, out address);
 		}
 
-		private static bool ToAddressPrivate32(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		private static bool ToAddressPrivate32(void* processHandle, Pointer pointer, out void* address) {
 			uint newAddress;
 			IList<uint> offsets;
 
@@ -986,16 +934,16 @@ namespace NativeSharp {
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
-					if (!ReadUInt32Internal(processHandle, (IntPtr)newAddress, out newAddress))
+					if (!ReadUInt32Internal(processHandle, (void*)newAddress, out newAddress))
 						return false;
 				}
 				newAddress += offsets[offsets.Count - 1];
 			}
-			address = (IntPtr)newAddress;
+			address = (void*)newAddress;
 			return true;
 		}
 
-		private static bool ToAddressPrivate64(IntPtr processHandle, Pointer pointer, out IntPtr address) {
+		private static bool ToAddressPrivate64(void* processHandle, Pointer pointer, out void* address) {
 			ulong newAddress;
 			IList<uint> offsets;
 
@@ -1014,93 +962,88 @@ namespace NativeSharp {
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
-					if (!ReadUInt64Internal(processHandle, (IntPtr)newAddress, out newAddress))
+					if (!ReadUInt64Internal(processHandle, (void*)newAddress, out newAddress))
 						return false;
 				}
 				newAddress += offsets[offsets.Count - 1];
 			}
-			address = (IntPtr)newAddress;
+			address = (void*)newAddress;
 			return true;
 		}
 		#endregion
 
 		#region read impl
-		internal static bool ReadByteInternal(IntPtr processHandle, IntPtr address, out byte value) {
+		internal static bool ReadByteInternal(void* processHandle, void* address, out byte value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 1, null);
+				return ReadInternal(processHandle, address, p, 1);
 		}
 
-		internal static bool ReadInt16Internal(IntPtr processHandle, IntPtr address, out short value) {
+		internal static bool ReadInt16Internal(void* processHandle, void* address, out short value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 2, null);
+				return ReadInternal(processHandle, address, p, 2);
 		}
 
-		internal static bool ReadUInt16Internal(IntPtr processHandle, IntPtr address, out ushort value) {
+		internal static bool ReadUInt16Internal(void* processHandle, void* address, out ushort value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 2, null);
+				return ReadInternal(processHandle, address, p, 2);
 		}
 
-		internal static bool ReadInt32Internal(IntPtr processHandle, IntPtr address, out int value) {
+		internal static bool ReadInt32Internal(void* processHandle, void* address, out int value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 4, null);
+				return ReadInternal(processHandle, address, p, 4);
 		}
 
-		internal static bool ReadUInt32Internal(IntPtr processHandle, IntPtr address, out uint value) {
+		internal static bool ReadUInt32Internal(void* processHandle, void* address, out uint value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 4, null);
+				return ReadInternal(processHandle, address, p, 4);
 		}
 
-		internal static bool ReadInt64Internal(IntPtr processHandle, IntPtr address, out long value) {
+		internal static bool ReadInt64Internal(void* processHandle, void* address, out long value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 8, null);
+				return ReadInternal(processHandle, address, p, 8);
 		}
 
-		internal static bool ReadUInt64Internal(IntPtr processHandle, IntPtr address, out ulong value) {
+		internal static bool ReadUInt64Internal(void* processHandle, void* address, out ulong value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 8, null);
+				return ReadInternal(processHandle, address, p, 8);
 		}
 
-		internal static bool ReadIntPtrInternal(IntPtr processHandle, IntPtr address, out IntPtr value) {
+		internal static bool ReadIntPtrInternal(void* processHandle, void* address, out IntPtr value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, (uint)IntPtr.Size, null);
+				return ReadInternal(processHandle, address, p, (uint)IntPtr.Size);
 		}
 
-		internal static bool ReadUIntPtrInternal(IntPtr processHandle, IntPtr address, out UIntPtr value) {
+		internal static bool ReadUIntPtrInternal(void* processHandle, void* address, out UIntPtr value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, (uint)UIntPtr.Size, null);
+				return ReadInternal(processHandle, address, p, (uint)UIntPtr.Size);
 		}
 
-		internal static bool ReadSingleInternal(IntPtr processHandle, IntPtr address, out float value) {
+		internal static bool ReadSingleInternal(void* processHandle, void* address, out float value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 4, null);
+				return ReadInternal(processHandle, address, p, 4);
 		}
 
-		internal static bool ReadDoubleInternal(IntPtr processHandle, IntPtr address, out double value) {
+		internal static bool ReadDoubleInternal(void* processHandle, void* address, out double value) {
 			fixed (void* p = &value)
-				return ReadProcessMemory(processHandle, address, p, 8, null);
+				return ReadInternal(processHandle, address, p, 8);
 		}
 
-		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value) {
-			return ReadBytesInternal(processHandle, address, value, 0, (uint)value.Length, out _);
+		internal static bool ReadBytesInternal(void* processHandle, void* address, byte[] value) {
+			return ReadBytesInternal(processHandle, address, value, 0, (uint)value.Length);
 		}
 
-		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length) {
-			return ReadBytesInternal(processHandle, address, value, startIndex, length, out _);
-		}
-
-		internal static bool ReadBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length, out uint readCount) {
+		internal static bool ReadBytesInternal(void* processHandle, void* address, byte[] value, uint startIndex, uint length) {
 			fixed (void* p = &value[startIndex])
-			fixed (uint* pReadCount = &readCount)
-				return ReadProcessMemory(processHandle, address, p, length, pReadCount);
+				return ReadInternal(processHandle, address, p, length);
 		}
 
-		internal static bool ReadStringInternal(IntPtr processHandle, IntPtr address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
+		internal static bool ReadStringInternal(void* processHandle, void* address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
 			// 在出现时一些特殊字符可能导致字符串被过早截取！
 			const uint BASE_BUFFER_SIZE = 0x100;
 
 			uint dummy;
 
-			if (!ReadProcessMemory(processHandle, address, &dummy, isEndWithDoubleZero ? 2u : 1, null)) {
+			if (!ReadInternal(processHandle, address, &dummy, isEndWithDoubleZero ? 2u : 1)) {
 				value = null;
 				return false;
 			}
@@ -1135,7 +1078,7 @@ namespace NativeSharp {
 						stream.Read(bytes, 0, bytes.Length);
 						break;
 					}
-					address = (IntPtr)((byte*)address + bufferSize);
+					address = (byte*)address + bufferSize;
 					bufferSize += BASE_BUFFER_SIZE;
 				} while (bytes is null);
 				if (fromEncoding.CodePage != Encoding.Unicode.CodePage)
@@ -1145,77 +1088,80 @@ namespace NativeSharp {
 			}
 			return true;
 		}
+
+		internal static bool ReadInternal(void* processHandle, void* address, void* value, uint length) {
+			return ReadProcessMemory(processHandle, address, value, length, null);
+		}
 		#endregion
 
 		#region write impl
-		internal static bool WriteByteInternal(IntPtr processHandle, IntPtr address, byte value) {
-			return WriteProcessMemory(processHandle, address, &value, 1, null);
+		internal static bool WriteByteInternal(void* processHandle, void* address, byte value) {
+			return WriteInternal(processHandle, address, &value, 1);
 		}
 
-		internal static bool WriteInt16Internal(IntPtr processHandle, IntPtr address, short value) {
-			return WriteProcessMemory(processHandle, address, &value, 2, null);
+		internal static bool WriteInt16Internal(void* processHandle, void* address, short value) {
+			return WriteInternal(processHandle, address, &value, 2);
 		}
 
-		internal static bool WriteUInt16Internal(IntPtr processHandle, IntPtr address, ushort value) {
-			return WriteProcessMemory(processHandle, address, &value, 2, null);
+		internal static bool WriteUInt16Internal(void* processHandle, void* address, ushort value) {
+			return WriteInternal(processHandle, address, &value, 2);
 		}
 
-		internal static bool WriteInt32Internal(IntPtr processHandle, IntPtr address, int value) {
-			return WriteProcessMemory(processHandle, address, &value, 4, null);
+		internal static bool WriteInt32Internal(void* processHandle, void* address, int value) {
+			return WriteInternal(processHandle, address, &value, 4);
 		}
 
-		internal static bool WriteUInt32Internal(IntPtr processHandle, IntPtr address, uint value) {
-			return WriteProcessMemory(processHandle, address, &value, 4, null);
+		internal static bool WriteUInt32Internal(void* processHandle, void* address, uint value) {
+			return WriteInternal(processHandle, address, &value, 4);
 		}
 
-		internal static bool WriteInt64Internal(IntPtr processHandle, IntPtr address, long value) {
-			return WriteProcessMemory(processHandle, address, &value, 8, null);
+		internal static bool WriteInt64Internal(void* processHandle, void* address, long value) {
+			return WriteInternal(processHandle, address, &value, 8);
 		}
 
-		internal static bool WriteUInt64Internal(IntPtr processHandle, IntPtr address, ulong value) {
-			return WriteProcessMemory(processHandle, address, &value, 8, null);
+		internal static bool WriteUInt64Internal(void* processHandle, void* address, ulong value) {
+			return WriteInternal(processHandle, address, &value, 8);
 		}
 
-		internal static bool WriteIntPtrInternal(IntPtr processHandle, IntPtr address, IntPtr value) {
-			return WriteProcessMemory(processHandle, address, &value, (uint)IntPtr.Size, null);
+		internal static bool WriteIntPtrInternal(void* processHandle, void* address, IntPtr value) {
+			return WriteInternal(processHandle, address, &value, (uint)IntPtr.Size);
 		}
 
-		internal static bool WriteUIntPtrInternal(IntPtr processHandle, IntPtr address, UIntPtr value) {
-			return WriteProcessMemory(processHandle, address, &value, (uint)UIntPtr.Size, null);
+		internal static bool WriteUIntPtrInternal(void* processHandle, void* address, UIntPtr value) {
+			return WriteInternal(processHandle, address, &value, (uint)UIntPtr.Size);
 		}
 
-		internal static bool WriteSingleInternal(IntPtr processHandle, IntPtr address, float value) {
-			return WriteProcessMemory(processHandle, address, &value, 4, null);
+		internal static bool WriteSingleInternal(void* processHandle, void* address, float value) {
+			return WriteInternal(processHandle, address, &value, 4);
 		}
 
-		internal static bool WriteDoubleInternal(IntPtr processHandle, IntPtr address, double value) {
-			return WriteProcessMemory(processHandle, address, &value, 8, null);
+		internal static bool WriteDoubleInternal(void* processHandle, void* address, double value) {
+			return WriteInternal(processHandle, address, &value, 8);
 		}
 
-		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value) {
-			return WriteBytesInternal(processHandle, address, value, 0, (uint)value.Length, out _);
+		internal static bool WriteBytesInternal(void* processHandle, void* address, byte[] value) {
+			return WriteBytesInternal(processHandle, address, value, 0, (uint)value.Length);
 		}
 
-		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length) {
-			return WriteBytesInternal(processHandle, address, value, startIndex, length, out _);
-		}
-
-		internal static bool WriteBytesInternal(IntPtr processHandle, IntPtr address, byte[] value, uint startIndex, uint length, out uint writtenCount) {
+		internal static bool WriteBytesInternal(void* processHandle, void* address, byte[] value, uint startIndex, uint length) {
 			fixed (void* p = &value[startIndex])
-			fixed (uint* pWrittenCount = &writtenCount)
-				return WriteProcessMemory(processHandle, address, p, length, pWrittenCount);
+				return WriteInternal(processHandle, address, p, length);
 		}
 
-		internal static bool WriteStringInternal(IntPtr processHandle, IntPtr address, string value, Encoding toEncoding) {
+		internal static bool WriteStringInternal(void* processHandle, void* address, string value, Encoding toEncoding) {
 			byte[] buffer;
 
 			value += "\0";
 			if (toEncoding.CodePage == Encoding.Unicode.CodePage)
 				fixed (void* p = value)
-					return WriteProcessMemory(processHandle, address, p, (uint)(value.Length * 2), null);
+					return WriteInternal(processHandle, address, p, (uint)(value.Length * 2));
 			buffer = Encoding.Convert(Encoding.Unicode, toEncoding, Encoding.Unicode.GetBytes(value));
 			fixed (void* p = buffer)
-				return WriteProcessMemory(processHandle, address, p, (uint)buffer.Length, null);
+				return WriteInternal(processHandle, address, p, (uint)buffer.Length);
+		}
+
+		internal static bool WriteInternal(void* processHandle, void* address, void* value, uint length) {
+			return WriteProcessMemory(processHandle, address, value, length, null);
 		}
 		#endregion
 	}

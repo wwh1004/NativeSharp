@@ -1,4 +1,3 @@
-using System;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
@@ -25,7 +24,7 @@ namespace NativeSharp {
 		/// <param name="writable">是否可写</param>
 		/// <param name="executable">是否可执行</param>
 		/// <returns></returns>
-		public IntPtr AllocMemory(uint size, bool writable, bool executable) {
+		public void* AllocMemory(uint size, bool writable, bool executable) {
 			QuickDemand(ProcessAccess.MemoryOperation);
 			return AllocMemoryInternal(_handle, size, ToProtection(writable, executable));
 		}
@@ -36,7 +35,7 @@ namespace NativeSharp {
 		/// <param name="size">大小</param>
 		/// <param name="protection">选项</param>
 		/// <returns></returns>
-		public IntPtr AllocMemory(uint size, MemoryProtection protection) {
+		public void* AllocMemory(uint size, MemoryProtection protection) {
 			QuickDemand(ProcessAccess.MemoryOperation);
 			return AllocMemoryInternal(_handle, size, protection);
 		}
@@ -48,20 +47,20 @@ namespace NativeSharp {
 		/// <param name="size">大小</param>
 		/// <param name="protection">选项</param>
 		/// <returns></returns>
-		public IntPtr AllocMemory(IntPtr address, uint size, MemoryProtection protection) {
+		public void* AllocMemory(void* address, uint size, MemoryProtection protection) {
 			QuickDemand(ProcessAccess.MemoryOperation);
 			return AllocMemoryInternal(_handle, address, size, protection);
 		}
 
-		internal static IntPtr AllocMemoryInternal(IntPtr processHandle, uint size, bool writable, bool executable) {
+		internal static void* AllocMemoryInternal(void* processHandle, uint size, bool writable, bool executable) {
 			return AllocMemoryInternal(processHandle, size, ToProtection(writable, executable));
 		}
 
-		internal static IntPtr AllocMemoryInternal(IntPtr processHandle, uint size, MemoryProtection protection) {
-			return VirtualAllocEx(processHandle, IntPtr.Zero, size, (uint)MemoryType.Commit, (uint)protection);
+		internal static void* AllocMemoryInternal(void* processHandle, uint size, MemoryProtection protection) {
+			return VirtualAllocEx(processHandle, null, size, (uint)MemoryType.Commit, (uint)protection);
 		}
 
-		internal static IntPtr AllocMemoryInternal(IntPtr processHandle, IntPtr address, uint size, MemoryProtection protection) {
+		internal static void* AllocMemoryInternal(void* processHandle, void* address, uint size, MemoryProtection protection) {
 			return VirtualAllocEx(processHandle, address, size, (uint)MemoryType.Commit, (uint)protection);
 		}
 
@@ -70,7 +69,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="address">地址</param>
 		/// <returns></returns>
-		public bool FreeMemory(IntPtr address) {
+		public bool FreeMemory(void* address) {
 			QuickDemand(ProcessAccess.MemoryOperation);
 			return FreeMemoryInternal(_handle, address);
 		}
@@ -82,16 +81,16 @@ namespace NativeSharp {
 		/// <param name="size">大小</param>
 		/// <param name="type">选项</param>
 		/// <returns></returns>
-		public bool FreeMemory(IntPtr address, uint size, MemoryType type) {
+		public bool FreeMemory(void* address, uint size, MemoryType type) {
 			QuickDemand(ProcessAccess.MemoryOperation);
 			return FreeMemoryInternal(_handle, address, size, type);
 		}
 
-		internal static bool FreeMemoryInternal(IntPtr processHandle, IntPtr address) {
+		internal static bool FreeMemoryInternal(void* processHandle, void* address) {
 			return VirtualFreeEx(processHandle, address, 0, (uint)MemoryType.Decommit);
 		}
 
-		internal static bool FreeMemoryInternal(IntPtr processHandle, IntPtr address, uint size, MemoryType type) {
+		internal static bool FreeMemoryInternal(void* processHandle, void* address, uint size, MemoryType type) {
 			return VirtualFreeEx(processHandle, address, size, (uint)type);
 		}
 	}

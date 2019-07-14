@@ -56,7 +56,7 @@ namespace NativeSharp {
 		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcessId(), GetCurrentProcess(), ProcessAccess.AllAccess);
 
 		private readonly uint _id;
-		private readonly IntPtr _handle;
+		private readonly void* _handle;
 		private readonly ProcessAccess? _access;
 		private bool _isDisposed;
 
@@ -78,24 +78,14 @@ namespace NativeSharp {
 		/// <summary>
 		/// 打开进程时获取的句柄
 		/// </summary>
-		public IntPtr Handle {
+		public void* Handle {
 			get {
 				QuickDemand(0);
 				return _handle;
 			}
 		}
 
-		/// <summary>
-		/// 是否为零
-		/// </summary>
-		public bool IsZero {
-			get {
-				QuickDemand(0);
-				return _handle == IntPtr.Zero;
-			}
-		}
-
-		private NativeProcess(uint id, IntPtr handle, ProcessAccess? access) {
+		private NativeProcess(uint id, void* handle, ProcessAccess? access) {
 			_id = id;
 			_handle = handle;
 			_access = access;
@@ -117,11 +107,11 @@ namespace NativeSharp {
 		/// <param name="access">权限</param>
 		/// <returns></returns>
 		public static NativeProcess Open(uint id, ProcessAccess access) {
-			IntPtr processHandle;
+			void* processHandle;
 
 			access |= ProcessAccess.QueryInformation;
 			processHandle = OpenProcess((uint)access, false, id);
-			return processHandle == IntPtr.Zero ? null : new NativeProcess(id, processHandle, access);
+			return processHandle is null ? null : new NativeProcess(id, processHandle, access);
 		}
 
 		/// <summary>
@@ -129,8 +119,8 @@ namespace NativeSharp {
 		/// </summary>
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
-		public static NativeProcess UnsafeOpen(IntPtr handle) {
-			if (handle == IntPtr.Zero)
+		public static NativeProcess UnsafeOpen(void* handle) {
+			if (handle is null)
 				return null;
 
 			uint id;
@@ -145,8 +135,8 @@ namespace NativeSharp {
 		/// <param name="id">进程ID</param>
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
-		public static NativeProcess UnsafeOpen(uint id, IntPtr handle) {
-			return handle == IntPtr.Zero ? null : new NativeProcess(id, handle, null);
+		public static NativeProcess UnsafeOpen(uint id, void* handle) {
+			return handle is null ? null : new NativeProcess(id, handle, null);
 		}
 
 		/// <summary>

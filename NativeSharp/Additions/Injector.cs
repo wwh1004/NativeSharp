@@ -150,12 +150,12 @@ namespace NativeSharp {
 			}
 		}
 
-		internal static bool InjectManagedInternal(IntPtr processHandle, string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue, bool wait) {
+		internal static bool InjectManagedInternal(void* processHandle, string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue, bool wait) {
 			bool isAssembly;
 			InjectionClrVersion clrVersionTemp;
 			bool isWow64;
-			IntPtr pEnvironment;
-			IntPtr threadHandle;
+			void* pEnvironment;
+			void* threadHandle;
 			uint exitCode;
 
 			returnValue = 0;
@@ -173,17 +173,17 @@ namespace NativeSharp {
 			// 加载对应进程位数的mscoree.dll
 			pEnvironment = WriteMachineCode(processHandle, clrVersion, assemblyPath, typeName, methodName, argument);
 			// 获取远程进程中启动CLR的函数指针
-			if (pEnvironment == IntPtr.Zero)
+			if (pEnvironment is null)
 				return false;
-			threadHandle = CreateRemoteThread(processHandle, null, 0, pEnvironment, (IntPtr)((byte*)pEnvironment + ReturnValueOffset), 0, null);
-			if (threadHandle == IntPtr.Zero)
+			threadHandle = CreateRemoteThread(processHandle, null, 0, pEnvironment, ((byte*)pEnvironment + ReturnValueOffset), 0, null);
+			if (threadHandle is null)
 				return false;
 			if (wait) {
 				WaitForSingleObject(threadHandle, INFINITE);
 				// 等待线程结束
 				if (!GetExitCodeThread(threadHandle, out exitCode))
 					return false;
-				if (!NativeProcess.ReadInt32Internal(processHandle, (IntPtr)((byte*)pEnvironment + ReturnValueOffset), out returnValue))
+				if (!NativeProcess.ReadInt32Internal(processHandle, ((byte*)pEnvironment + ReturnValueOffset), out returnValue))
 					return false;
 				// 获取程序集中被调用方法的返回值
 				if (!NativeProcess.FreeMemoryInternal(processHandle, pEnvironment))
@@ -193,22 +193,22 @@ namespace NativeSharp {
 			return true;
 		}
 
-		internal static bool InjectUnmanagedInternal(IntPtr processHandle, string dllPath) {
-			IntPtr pLoadLibrary;
-			IntPtr pDllPath;
-			IntPtr threadHandle;
+		internal static bool InjectUnmanagedInternal(void* processHandle, string dllPath) {
+			void* pLoadLibrary;
+			void* pDllPath;
+			void* threadHandle;
 			uint exitCode;
 
 			pLoadLibrary = NativeModule.GetFunctionAddressInternal(processHandle, "kernel32.dll", "LoadLibraryW");
 			// 获取LoadLibrary的函数地址
 			pDllPath = NativeProcess.AllocMemoryInternal(processHandle, (uint)dllPath.Length * 2 + 2, MemoryProtection.ExecuteRead);
 			try {
-				if (pDllPath == IntPtr.Zero)
+				if (pDllPath is null)
 					return false;
 				if (!NativeProcess.WriteStringInternal(processHandle, pDllPath, dllPath, Encoding.Unicode))
 					return false;
 				threadHandle = CreateRemoteThread(processHandle, null, 0, pLoadLibrary, pDllPath, 0, null);
-				if (threadHandle == IntPtr.Zero)
+				if (threadHandle is null)
 					return false;
 				WaitForSingleObject(threadHandle, INFINITE);
 				// 等待线程结束
@@ -221,16 +221,16 @@ namespace NativeSharp {
 			}
 		}
 
-		private static IntPtr WriteMachineCode(IntPtr processHandle, InjectionClrVersion clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
+		private static void* WriteMachineCode(void* processHandle, InjectionClrVersion clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
 			bool is64Bit;
 			string clrVersionString;
 			byte[] machineCode;
-			IntPtr pEnvironment;
-			IntPtr pCorBindToRuntimeEx;
-			IntPtr pCLRCreateInstance;
+			void* pEnvironment;
+			void* pCorBindToRuntimeEx;
+			void* pCLRCreateInstance;
 
 			if (!NativeProcess.Is64BitProcessInternal(processHandle, out is64Bit))
-				return IntPtr.Zero;
+				return null;
 			switch (clrVersion) {
 			case InjectionClrVersion.V2:
 				clrVersionString = CLR_V2;
@@ -243,15 +243,15 @@ namespace NativeSharp {
 			}
 			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
 			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
-			if (pEnvironment == IntPtr.Zero)
-				return IntPtr.Zero;
+			if (pEnvironment is null)
+				return null;
 			try {
 				fixed (byte* p = machineCode)
 					switch (clrVersion) {
 					case InjectionClrVersion.V2:
 						pCorBindToRuntimeEx = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CorBindToRuntimeEx");
-						if (pCorBindToRuntimeEx == IntPtr.Zero)
-							return IntPtr.Zero;
+						if (pCorBindToRuntimeEx is null)
+							return null;
 						if (is64Bit)
 							WriteMachineCode64v2(p, (ulong)pEnvironment, (ulong)pCorBindToRuntimeEx);
 						else
@@ -259,8 +259,8 @@ namespace NativeSharp {
 						break;
 					case InjectionClrVersion.V4:
 						pCLRCreateInstance = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CLRCreateInstance");
-						if (pCLRCreateInstance == IntPtr.Zero)
-							return IntPtr.Zero;
+						if (pCLRCreateInstance is null)
+							return null;
 						if (is64Bit)
 							WriteMachineCode64v4(p, (ulong)pEnvironment, (ulong)pCLRCreateInstance);
 						else
@@ -268,11 +268,11 @@ namespace NativeSharp {
 						break;
 					}
 				if (!NativeProcess.WriteBytesInternal(processHandle, pEnvironment, machineCode))
-					return IntPtr.Zero;
+					return null;
 			}
 			catch {
 				NativeProcess.FreeMemoryInternal(processHandle, pEnvironment);
-				return IntPtr.Zero;
+				return null;
 			}
 			return pEnvironment;
 		}

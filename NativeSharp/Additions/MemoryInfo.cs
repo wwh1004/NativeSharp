@@ -73,21 +73,21 @@ namespace NativeSharp {
 	/// <summary>
 	/// 页面信息
 	/// </summary>
-	public sealed class PageInfo {
-		private readonly IntPtr _address;
-		private readonly IntPtr _size;
+	public sealed unsafe class PageInfo {
+		private readonly void* _address;
+		private readonly void* _size;
 		private readonly MemoryProtection _protection;
 		private readonly MemoryType _type;
 
 		/// <summary>
 		/// 起始地址
 		/// </summary>
-		public IntPtr Address => _address;
+		public void* Address => _address;
 
 		/// <summary>
 		/// 大小
 		/// </summary>
-		public IntPtr Size => _size;
+		public void* Size => _size;
 
 		/// <summary>
 		/// 保护
@@ -111,7 +111,7 @@ namespace NativeSharp {
 			bool is64Bit;
 
 			is64Bit = (ulong)_address > uint.MaxValue;
-			return $"Address=0x{_address.ToString(is64Bit ? "X16" : "X8")} Size=0x{_size.ToString(is64Bit ? "X16" : "X8")}";
+			return $"Address=0x{((IntPtr)_address).ToString(is64Bit ? "X16" : "X8")} Size=0x{((IntPtr)_size).ToString(is64Bit ? "X16" : "X8")}";
 		}
 	}
 
@@ -122,7 +122,7 @@ namespace NativeSharp {
 		/// <returns></returns>
 		public IEnumerable<PageInfo> EnumeratePageInfos() {
 			QuickDemand(ProcessAccess.QueryInformation);
-			return EnumeratePageInfosInternal(_handle, IntPtr.Zero, (IntPtr)(-1));
+			return EnumeratePageInfosInternal((IntPtr)_handle, IntPtr.Zero, (IntPtr)(void*)-1);
 		}
 
 		/// <summary>
@@ -131,45 +131,42 @@ namespace NativeSharp {
 		/// <param name="startAddress">起始地址</param>
 		/// <param name="endAddress">结束地址</param>
 		/// <returns></returns>
-		public IEnumerable<PageInfo> EnumeratePageInfos(IntPtr startAddress, IntPtr endAddress) {
+		public IEnumerable<PageInfo> EnumeratePageInfos(void* startAddress, void* endAddress) {
 			QuickDemand(ProcessAccess.QueryInformation);
-			return EnumeratePageInfosInternal(_handle, startAddress, endAddress);
+			return EnumeratePageInfosInternal((IntPtr)_handle, (IntPtr)startAddress, (IntPtr)endAddress);
 		}
 
 		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
 			bool is64Bit;
+			IntPtr nextAddress;
 
-			if (!Is64BitProcessInternal(processHandle, out is64Bit))
-				return null;
-			return is64Bit ? EnumeratePageInfosInternal64(processHandle, (ulong)startAddress, (ulong)endAddress) : EnumeratePageInfosInternal32(processHandle, (uint)startAddress, (uint)endAddress);
-		}
-
-		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal32(IntPtr processHandle, uint startAddress, uint endAddress) {
-			uint nextAddress;
-
+			if (!SafeIs64BitProcessInternal(processHandle, out is64Bit))
+				yield break;
 			nextAddress = startAddress;
 			do {
 				MEMORY_BASIC_INFORMATION mbi;
 
-				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
+				if (!SafeVirtualQueryEx(processHandle, nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
 				yield return new PageInfo(mbi);
-				nextAddress = (uint)mbi.BaseAddress + (uint)mbi.RegionSize;
-			} while ((int)nextAddress > 0 && nextAddress < endAddress);
-		}
+				nextAddress = SafeGetNextAddress(mbi);
+			} while ((long)nextAddress > 0 && NextAddressLessThanEndAddress(nextAddress, endAddress));
 
-		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal64(IntPtr processHandle, ulong startAddress, ulong endAddress) {
-			ulong nextAddress;
+			bool SafeIs64BitProcessInternal(IntPtr processHandle_, out bool is64Bit_) {
+				return Is64BitProcessInternal((void*)processHandle_, out is64Bit_);
+			}
 
-			nextAddress = startAddress;
-			do {
-				MEMORY_BASIC_INFORMATION mbi;
+			bool SafeVirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength) {
+				return VirtualQueryEx((void*)hProcess, (void*)lpAddress, out lpBuffer, dwLength);
+			}
 
-				if (!VirtualQueryEx(processHandle, (IntPtr)nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
-					break;
-				yield return new PageInfo(mbi);
-				nextAddress = (ulong)mbi.BaseAddress + (ulong)mbi.RegionSize;
-			} while ((long)nextAddress > 0 && nextAddress < endAddress);
+			IntPtr SafeGetNextAddress(MEMORY_BASIC_INFORMATION mbi_) {
+				return (IntPtr)(void*)(is64Bit ? ((ulong)mbi_.BaseAddress + (ulong)mbi_.RegionSize) : (uint)mbi_.BaseAddress + (uint)mbi_.RegionSize);
+			}
+
+			bool NextAddressLessThanEndAddress(IntPtr nextAddress_, IntPtr endAddress_) {
+				return is64Bit ? (ulong)nextAddress_ < (ulong)endAddress_ : (uint)nextAddress_ < (uint)endAddress_;
+			}
 		}
 	}
 }

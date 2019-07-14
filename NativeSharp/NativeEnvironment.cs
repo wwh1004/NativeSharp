@@ -5,7 +5,7 @@ namespace NativeSharp {
 	/// <summary>
 	/// Win32环境
 	/// </summary>
-	public static class NativeEnvironment {
+	public static unsafe class NativeEnvironment {
 		private static readonly bool _is64BitOperatingSystem;
 
 		/// <summary>
