@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using static NativeSharp.NativeMethods;
@@ -23,36 +24,66 @@ namespace NativeSharp {
 	/// 指针
 	/// </summary>
 	public sealed class Pointer {
-		private readonly string _moduleName;
-		private readonly uint _moduleOffset;
-		private readonly IntPtr _baseAddress;
-		private readonly uint[] _offsets;
-		private readonly PointerType _type;
+		private string _moduleName;
+		private uint _moduleOffset;
+		private IntPtr _baseAddress;
+		private PointerType _type;
+		private readonly List<uint> _offsets;
 
 		/// <summary>
 		/// 模块名
 		/// </summary>
-		public string ModuleName => _type == PointerType.ModuleNameWithOffset ? _moduleName : throw new InvalidOperationException($"Type={_type}");
+		public string ModuleName {
+			get {
+				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
+				return _moduleName;
+			}
+			set {
+				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
+				_moduleName = value;
+			}
+		}
 
 		/// <summary>
 		/// 模块偏移
 		/// </summary>
-		public uint ModuleOffset => _type == PointerType.ModuleNameWithOffset ? _moduleOffset : throw new InvalidOperationException($"Type={_type}");
+		public uint ModuleOffset {
+			get {
+				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
+				return _moduleOffset;
+			}
+			set {
+				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
+				_moduleOffset = value;
+			}
+		}
 
 		/// <summary>
 		/// 基址
 		/// </summary>
-		public IntPtr BaseAddress => _type == PointerType.BaseAddressWithOffset ? _baseAddress : throw new InvalidOperationException($"Type={_type}");
-
-		/// <summary>
-		/// 多级偏移
-		/// </summary>
-		public uint[] Offsets => _offsets;
+		public IntPtr BaseAddress {
+			get {
+				ThrowIfTypeError(PointerType.BaseAddressWithOffset);
+				return _baseAddress;
+			}
+			set {
+				ThrowIfTypeError(PointerType.BaseAddressWithOffset);
+				_baseAddress = value;
+			}
+		}
 
 		/// <summary>
 		/// 类型
 		/// </summary>
-		public PointerType Type => _type;
+		public PointerType Type {
+			get => _type;
+			set => _type = value;
+		}
+
+		/// <summary>
+		/// 多级偏移
+		/// </summary>
+		public IList<uint> Offsets => _offsets;
 
 		/// <summary>
 		/// 构造器
@@ -61,12 +92,9 @@ namespace NativeSharp {
 		/// <param name="moduleOffset">模块偏移</param>
 		/// <param name="offsets">多级偏移</param>
 		public Pointer(string moduleName, uint moduleOffset, params uint[] offsets) {
-			if (string.IsNullOrEmpty(moduleName))
-				throw new ArgumentNullException(nameof(moduleName));
-
 			_moduleName = moduleName;
 			_moduleOffset = moduleOffset;
-			_offsets = offsets;
+			_offsets = new List<uint>(offsets);
 			_type = PointerType.ModuleNameWithOffset;
 		}
 
@@ -77,7 +105,7 @@ namespace NativeSharp {
 		/// <param name="offsets">偏移</param>
 		public Pointer(IntPtr baseAddress, params uint[] offsets) {
 			_baseAddress = baseAddress;
-			_offsets = offsets;
+			_offsets = new List<uint>(offsets);
 			_type = PointerType.BaseAddressWithOffset;
 		}
 
@@ -87,10 +115,8 @@ namespace NativeSharp {
 		/// <param name="basePointer">指针</param>
 		/// <param name="offsets">分级偏移</param>
 		public Pointer(Pointer basePointer, params uint[] offsets) {
-			int baseLength;
-			int newLength;
-
-			switch (basePointer._type) {
+			_type = basePointer._type;
+			switch (_type) {
 			case PointerType.ModuleNameWithOffset:
 				_moduleName = basePointer._moduleName;
 				_moduleOffset = basePointer._moduleOffset;
@@ -101,19 +127,13 @@ namespace NativeSharp {
 			default:
 				throw new ArgumentOutOfRangeException(nameof(_type));
 			}
-			baseLength = basePointer._offsets.Length;
-			if (baseLength == 0) {
-				_offsets = offsets;
-				return;
-			}
-			newLength = offsets.Length;
-			if (newLength == 0) {
-				_offsets = basePointer._offsets;
-				return;
-			}
-			_offsets = new uint[baseLength + newLength];
-			Array.Copy(basePointer._offsets, 0, _offsets, 0, baseLength);
-			Array.Copy(offsets, 0, _offsets, baseLength, newLength);
+			_offsets = new List<uint>(basePointer._offsets);
+			_offsets.AddRange(offsets);
+		}
+
+		private void ThrowIfTypeError(PointerType type) {
+			if (_type != type)
+				throw new InvalidOperationException($"Type={_type}");
 		}
 	}
 
@@ -949,7 +969,7 @@ namespace NativeSharp {
 
 		private static bool ToAddressPrivate32(IntPtr processHandle, Pointer pointer, out IntPtr address) {
 			uint newAddress;
-			uint[] offsets;
+			IList<uint> offsets;
 
 			address = default;
 			if (pointer.Type == PointerType.BaseAddressWithOffset) {
@@ -963,13 +983,13 @@ namespace NativeSharp {
 				newAddress += pointer.ModuleOffset;
 			}
 			offsets = pointer.Offsets;
-			if (offsets.Length > 0) {
-				for (int i = 0; i < offsets.Length - 1; i++) {
+			if (offsets.Count > 0) {
+				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
 					if (!ReadUInt32Internal(processHandle, (IntPtr)newAddress, out newAddress))
 						return false;
 				}
-				newAddress += offsets[offsets.Length - 1];
+				newAddress += offsets[offsets.Count - 1];
 			}
 			address = (IntPtr)newAddress;
 			return true;
@@ -977,7 +997,7 @@ namespace NativeSharp {
 
 		private static bool ToAddressPrivate64(IntPtr processHandle, Pointer pointer, out IntPtr address) {
 			ulong newAddress;
-			uint[] offsets;
+			IList<uint> offsets;
 
 			address = default;
 			if (pointer.Type == PointerType.BaseAddressWithOffset) {
@@ -991,13 +1011,13 @@ namespace NativeSharp {
 				newAddress += pointer.ModuleOffset;
 			}
 			offsets = pointer.Offsets;
-			if (offsets.Length > 0) {
-				for (int i = 0; i < offsets.Length - 1; i++) {
+			if (offsets.Count > 0) {
+				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
 					if (!ReadUInt64Internal(processHandle, (IntPtr)newAddress, out newAddress))
 						return false;
 				}
-				newAddress += offsets[offsets.Length - 1];
+				newAddress += offsets[offsets.Count - 1];
 			}
 			address = (IntPtr)newAddress;
 			return true;
