@@ -53,12 +53,20 @@ namespace NativeSharp {
 	/// Win32进程
 	/// </summary>
 	public sealed unsafe partial class NativeProcess : IDisposable {
+		private static readonly NativeProcess _invalidProcess = new NativeProcess(0, null, 0) {
+			_isDisposed = true
+		};
 		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcessId(), GetCurrentProcess(), ProcessAccess.AllAccess);
 
 		private readonly uint _id;
 		private readonly void* _handle;
 		private readonly ProcessAccess? _access;
 		private bool _isDisposed;
+
+		/// <summary>
+		/// 表示一个无效进程
+		/// </summary>
+		public static NativeProcess InvalidProcess => _invalidProcess;
 
 		/// <summary>
 		/// 当前进程
@@ -92,7 +100,7 @@ namespace NativeSharp {
 		}
 
 		/// <summary>
-		/// 打开进程
+		/// 打开进程，失败时返回 <see cref="InvalidProcess"/>
 		/// </summary>
 		/// <param name="id">进程ID</param>
 		/// <returns></returns>
@@ -101,7 +109,7 @@ namespace NativeSharp {
 		}
 
 		/// <summary>
-		/// 打开进程
+		/// 打开进程，失败时返回 <see cref="InvalidProcess"/>
 		/// </summary>
 		/// <param name="id">进程ID</param>
 		/// <param name="access">权限</param>
@@ -111,11 +119,11 @@ namespace NativeSharp {
 
 			access |= ProcessAccess.QueryInformation;
 			processHandle = OpenProcess((uint)access, false, id);
-			return processHandle is null ? null : new NativeProcess(id, processHandle, access);
+			return processHandle is null ? InvalidProcess : new NativeProcess(id, processHandle, access);
 		}
 
 		/// <summary>
-		/// 通过已有句柄打开进程，并且跳过权限检查
+		/// 通过已有句柄打开进程，并且跳过权限检查，失败时返回 <see cref="InvalidProcess"/>
 		/// </summary>
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
@@ -126,17 +134,17 @@ namespace NativeSharp {
 			uint id;
 
 			id = GetProcessId(handle);
-			return id == 0 ? null : new NativeProcess(id, handle, null);
+			return id == 0 ? InvalidProcess : new NativeProcess(id, handle, null);
 		}
 
 		/// <summary>
-		/// 通过已有句柄打开进程，并且跳过权限检查
+		/// 通过已有句柄打开进程，并且跳过权限检查，失败时返回 <see cref="InvalidProcess"/>
 		/// </summary>
 		/// <param name="id">进程ID</param>
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
 		public static NativeProcess UnsafeOpen(uint id, void* handle) {
-			return handle is null ? null : new NativeProcess(id, handle, null);
+			return handle is null ? InvalidProcess : new NativeProcess(id, handle, null);
 		}
 
 		/// <summary>

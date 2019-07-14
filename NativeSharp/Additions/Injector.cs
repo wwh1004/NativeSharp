@@ -105,8 +105,6 @@ namespace NativeSharp {
 		public bool InjectUnmanaged(string dllPath) {
 			if (string.IsNullOrEmpty(dllPath))
 				throw new ArgumentNullException(nameof(dllPath));
-			if (!File.Exists(dllPath))
-				throw new FileNotFoundException();
 
 			QuickDemand(ProcessAccess.CreateThread | ProcessAccess.MemoryOperation | ProcessAccess.MemoryRead | ProcessAccess.MemoryWrite | ProcessAccess.QueryInformation | ProcessAccess.Synchronize);
 			return Injector.InjectUnmanagedInternal(_handle, dllPath);
@@ -153,7 +151,6 @@ namespace NativeSharp {
 		internal static bool InjectManagedInternal(void* processHandle, string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue, bool wait) {
 			bool isAssembly;
 			InjectionClrVersion clrVersionTemp;
-			bool isWow64;
 			void* pEnvironment;
 			void* threadHandle;
 			uint exitCode;
@@ -166,9 +163,7 @@ namespace NativeSharp {
 				clrVersion = clrVersionTemp;
 			if (!isAssembly)
 				throw new NotSupportedException("Not a valid .NET assembly.");
-			if (!IsWow64Process(processHandle, out isWow64))
-				return false;
-			if (!InjectUnmanagedInternal(processHandle, Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), isWow64 ? @"SysWOW64\mscoree.dll" : @"System32\mscoree.dll")))
+			if (!InjectUnmanagedInternal(processHandle, Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), @"System32\mscoree.dll")))
 				return false;
 			// 加载对应进程位数的mscoree.dll
 			pEnvironment = WriteMachineCode(processHandle, clrVersion, assemblyPath, typeName, methodName, argument);

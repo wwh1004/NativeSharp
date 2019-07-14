@@ -1,10 +1,29 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Text;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
 	unsafe partial class NativeProcess {
+		/// <summary>
+		/// 通过进程名称获取进程ID
+		/// </summary>
+		/// <param name="processName">进程名称</param>
+		/// <returns></returns>
+		public static IEnumerable<uint> GetProcessIdsByName(string processName) {
+			if (string.IsNullOrEmpty(processName))
+				throw new ArgumentNullException(nameof(processName));
+
+			foreach (uint processId in GetAllProcessIds())
+				using (NativeProcess process = Open(processId, ProcessAccess.QueryInformation)) {
+					if (process == InvalidProcess)
+						continue;
+					if (string.Equals(process.Name, processName, StringComparison.OrdinalIgnoreCase))
+						yield return processId;
+				}
+		}
+
 		/// <summary>
 		/// 获取所有进程ID
 		/// </summary>
