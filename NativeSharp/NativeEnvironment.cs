@@ -14,10 +14,10 @@ namespace NativeSharp {
 		public static bool Is64BitOperatingSystem => _is64BitOperatingSystem;
 
 		static NativeEnvironment() {
-			bool isWow64;
-
-			IsWow64Process(GetCurrentProcess(), out isWow64);
-			_is64BitOperatingSystem = !isWow64 && IntPtr.Size == 8;
+			if (IntPtr.Size == 8)
+				_is64BitOperatingSystem = true;
+			else
+				IsWow64Process(GetCurrentProcess(), out _is64BitOperatingSystem);
 		}
 	}
 }

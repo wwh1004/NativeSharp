@@ -33,14 +33,11 @@ namespace NativeSharp {
 		internal static bool Is64BitProcessInternal(void* processHandle, out bool is64Bit) {
 			bool isWow64;
 
-			if (!NativeEnvironment.Is64BitOperatingSystem) {
-				is64Bit = false;
+			is64Bit = false;
+			if (!NativeEnvironment.Is64BitOperatingSystem)
 				return true;
-			}
-			if (!IsWow64Process(processHandle, out isWow64)) {
-				is64Bit = false;
+			if (!IsWow64Process(processHandle, out isWow64))
 				return false;
-			}
 			is64Bit = !isWow64;
 			return true;
 		}
