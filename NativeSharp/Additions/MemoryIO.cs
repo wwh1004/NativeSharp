@@ -6,78 +6,36 @@ using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
 	/// <summary>
-	/// 指针类型
-	/// </summary>
-	public enum PointerType {
-		/// <summary>
-		/// 模块名+偏移
-		/// </summary>
-		ModuleNameWithOffset,
-
-		/// <summary>
-		/// 基址+偏移
-		/// </summary>
-		BaseAddressWithOffset
-	}
-
-	/// <summary>
 	/// 指针
 	/// </summary>
 	public unsafe sealed class Pointer {
 		private string _moduleName;
-		private uint _moduleOffset;
 		private void* _baseAddress;
-		private PointerType _type;
+		private uint _baseOffset;
 		private readonly List<uint> _offsets;
 
 		/// <summary>
-		/// 模块名
+		/// 模块名。若 <see cref="BaseAddress"/> 为 <see langword="null"/>，下次使用当前指针实例获取地址时，<see cref="BaseAddress"/> 将被设置为 <see cref="ModuleName"/> 对应的句柄（模块基址）
 		/// </summary>
 		public string ModuleName {
-			get {
-				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
-				return _moduleName;
-			}
-			set {
-				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
-				_moduleName = value;
-			}
-		}
-
-		/// <summary>
-		/// 模块偏移
-		/// </summary>
-		public uint ModuleOffset {
-			get {
-				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
-				return _moduleOffset;
-			}
-			set {
-				ThrowIfTypeError(PointerType.ModuleNameWithOffset);
-				_moduleOffset = value;
-			}
+			get => _moduleName;
+			set => _moduleName = value;
 		}
 
 		/// <summary>
 		/// 基址
 		/// </summary>
 		public void* BaseAddress {
-			get {
-				ThrowIfTypeError(PointerType.BaseAddressWithOffset);
-				return _baseAddress;
-			}
-			set {
-				ThrowIfTypeError(PointerType.BaseAddressWithOffset);
-				_baseAddress = value;
-			}
+			get => _baseAddress;
+			set => _baseAddress = value;
 		}
 
 		/// <summary>
-		/// 类型
+		/// 基址偏移
 		/// </summary>
-		public PointerType Type {
-			get => _type;
-			set => _type = value;
+		public uint BaseOffset {
+			get => _baseOffset;
+			set => _baseOffset = value;
 		}
 
 		/// <summary>
@@ -88,52 +46,42 @@ namespace NativeSharp {
 		/// <summary>
 		/// 构造器
 		/// </summary>
+		public Pointer() {
+		}
+
+		/// <summary>
+		/// 构造器
+		/// </summary>
 		/// <param name="moduleName">模块名</param>
-		/// <param name="moduleOffset">模块偏移</param>
+		/// <param name="baseOffset">基址偏移</param>
 		/// <param name="offsets">多级偏移</param>
-		public Pointer(string moduleName, uint moduleOffset, params uint[] offsets) {
+		public Pointer(string moduleName, uint baseOffset, params uint[] offsets) {
 			_moduleName = moduleName;
-			_moduleOffset = moduleOffset;
+			_baseOffset = baseOffset;
 			_offsets = new List<uint>(offsets);
-			_type = PointerType.ModuleNameWithOffset;
 		}
 
 		/// <summary>
 		/// 构造器
 		/// </summary>
 		/// <param name="baseAddress">基址</param>
+		/// <param name="baseOffset">基址偏移</param>
 		/// <param name="offsets">偏移</param>
-		public Pointer(void* baseAddress, params uint[] offsets) {
+		public Pointer(void* baseAddress, uint baseOffset, params uint[] offsets) {
 			_baseAddress = baseAddress;
+			_baseOffset = baseOffset;
 			_offsets = new List<uint>(offsets);
-			_type = PointerType.BaseAddressWithOffset;
 		}
 
 		/// <summary>
 		/// 构造器
 		/// </summary>
-		/// <param name="basePointer">指针</param>
-		/// <param name="offsets">分级偏移</param>
-		public Pointer(Pointer basePointer, params uint[] offsets) {
-			_type = basePointer._type;
-			switch (_type) {
-			case PointerType.ModuleNameWithOffset:
-				_moduleName = basePointer._moduleName;
-				_moduleOffset = basePointer._moduleOffset;
-				break;
-			case PointerType.BaseAddressWithOffset:
-				_baseAddress = basePointer._baseAddress;
-				break;
-			default:
-				throw new ArgumentOutOfRangeException(nameof(_type));
-			}
-			_offsets = new List<uint>(basePointer._offsets);
-			_offsets.AddRange(offsets);
-		}
-
-		private void ThrowIfTypeError(PointerType type) {
-			if (_type != type)
-				throw new InvalidOperationException($"Type={_type}");
+		/// <param name="pointer">指针</param>
+		public Pointer(Pointer pointer) {
+			_moduleName = pointer._moduleName;
+			_baseAddress = pointer._baseAddress;
+			_baseOffset = pointer._baseOffset;
+			_offsets = new List<uint>(pointer._offsets);
 		}
 	}
 
@@ -920,16 +868,15 @@ namespace NativeSharp {
 			IList<uint> offsets;
 
 			address = default;
-			if (pointer.Type == PointerType.BaseAddressWithOffset) {
-				if (!ReadUInt32Internal(processHandle, pointer.BaseAddress, out newAddress))
-					return false;
+			if (pointer.BaseAddress is null) {
+				if (string.IsNullOrEmpty(pointer.ModuleName))
+					throw new ArgumentNullException(nameof(Pointer.ModuleName));
+				pointer.BaseAddress = GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
 			}
-			else {
-				newAddress = (uint)GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
-				if (newAddress == 0)
-					return false;
-				newAddress += pointer.ModuleOffset;
-			}
+			if (pointer.BaseAddress is null)
+				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
+			if (!ReadUInt32Internal(processHandle, (byte*)pointer.BaseAddress + pointer.BaseOffset, out newAddress))
+				return false;
 			offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
@@ -948,16 +895,15 @@ namespace NativeSharp {
 			IList<uint> offsets;
 
 			address = default;
-			if (pointer.Type == PointerType.BaseAddressWithOffset) {
-				if (!ReadUInt64Internal(processHandle, pointer.BaseAddress, out newAddress))
-					return false;
+			if (pointer.BaseAddress is null) {
+				if (string.IsNullOrEmpty(pointer.ModuleName))
+					throw new ArgumentNullException(nameof(Pointer.ModuleName));
+				pointer.BaseAddress = GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
 			}
-			else {
-				newAddress = (ulong)GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
-				if (newAddress == 0)
-					return false;
-				newAddress += pointer.ModuleOffset;
-			}
+			if (pointer.BaseAddress is null)
+				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
+			if (!ReadUInt64Internal(processHandle, (byte*)pointer.BaseAddress + pointer.BaseOffset, out newAddress))
+				return false;
 			offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {

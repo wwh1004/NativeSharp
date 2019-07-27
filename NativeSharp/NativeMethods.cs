@@ -4,8 +4,6 @@ using System.Text;
 namespace NativeSharp {
 	internal static unsafe class NativeMethods {
 		public const uint STANDARD_RIGHTS_REQUIRED = 0xF0000;
-		public const uint LIST_MODULES_32BIT = 0x1;
-		public const uint LIST_MODULES_64BIT = 0x2;
 		public const uint LIST_MODULES_ALL = 0x3;
 		public const uint MAX_MODULE_NAME32 = 255;
 		public const uint MAX_PATH = 260;
