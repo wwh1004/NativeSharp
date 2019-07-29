@@ -11,7 +11,6 @@ namespace NativeSharp {
 	public unsafe sealed class Pointer {
 		private string _moduleName;
 		private void* _baseAddress;
-		private uint _baseOffset;
 		private readonly List<uint> _offsets;
 
 		/// <summary>
@@ -31,14 +30,6 @@ namespace NativeSharp {
 		}
 
 		/// <summary>
-		/// 基址偏移
-		/// </summary>
-		public uint BaseOffset {
-			get => _baseOffset;
-			set => _baseOffset = value;
-		}
-
-		/// <summary>
 		/// 多级偏移
 		/// </summary>
 		public IList<uint> Offsets => _offsets;
@@ -47,17 +38,16 @@ namespace NativeSharp {
 		/// 构造器
 		/// </summary>
 		public Pointer() {
+			_offsets = new List<uint>();
 		}
 
 		/// <summary>
 		/// 构造器
 		/// </summary>
 		/// <param name="moduleName">模块名</param>
-		/// <param name="baseOffset">基址偏移</param>
 		/// <param name="offsets">多级偏移</param>
-		public Pointer(string moduleName, uint baseOffset, params uint[] offsets) {
+		public Pointer(string moduleName, params uint[] offsets) {
 			_moduleName = moduleName;
-			_baseOffset = baseOffset;
 			_offsets = new List<uint>(offsets);
 		}
 
@@ -65,11 +55,9 @@ namespace NativeSharp {
 		/// 构造器
 		/// </summary>
 		/// <param name="baseAddress">基址</param>
-		/// <param name="baseOffset">基址偏移</param>
 		/// <param name="offsets">偏移</param>
-		public Pointer(void* baseAddress, uint baseOffset, params uint[] offsets) {
+		public Pointer(void* baseAddress, params uint[] offsets) {
 			_baseAddress = baseAddress;
-			_baseOffset = baseOffset;
 			_offsets = new List<uint>(offsets);
 		}
 
@@ -80,7 +68,6 @@ namespace NativeSharp {
 		public Pointer(Pointer pointer) {
 			_moduleName = pointer._moduleName;
 			_baseAddress = pointer._baseAddress;
-			_baseOffset = pointer._baseOffset;
 			_offsets = new List<uint>(pointer._offsets);
 		}
 	}
@@ -875,8 +862,7 @@ namespace NativeSharp {
 			}
 			if (pointer.BaseAddress is null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
-			if (!ReadUInt32Internal(processHandle, (byte*)pointer.BaseAddress + pointer.BaseOffset, out newAddress))
-				return false;
+			newAddress = (uint)pointer.BaseAddress;
 			offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
@@ -902,8 +888,7 @@ namespace NativeSharp {
 			}
 			if (pointer.BaseAddress is null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
-			if (!ReadUInt64Internal(processHandle, (byte*)pointer.BaseAddress + pointer.BaseOffset, out newAddress))
-				return false;
+			newAddress = (ulong)pointer.BaseAddress;
 			offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
