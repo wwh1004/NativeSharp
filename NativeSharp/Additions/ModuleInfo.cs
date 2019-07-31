@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using static NativeSharp.NativeMethods;
 
@@ -31,7 +32,7 @@ namespace NativeSharp {
 
 		/// <summary />
 		public override string ToString() {
-			return $"{Name} (Address: 0x{Handle.ToString(_process.Is64Bit ? "X16" : "X8")})";
+			return $"{Name} (Address: 0x{((IntPtr)Handle).ToString(_process.Is64Bit ? "X16" : "X8")})";
 		}
 	}
 }

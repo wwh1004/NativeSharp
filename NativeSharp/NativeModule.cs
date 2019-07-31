@@ -11,12 +11,7 @@ namespace NativeSharp {
 		/// <summary>
 		/// 模块句柄
 		/// </summary>
-		public IntPtr Handle => (IntPtr)UnsafeHandle;
-
-		/// <summary>
-		/// 模块句柄
-		/// </summary>
-		public void* UnsafeHandle => _handle;
+		public void* Handle => _handle;
 
 		/// <summary>
 		/// 构造器
