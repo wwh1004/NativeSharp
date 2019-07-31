@@ -99,6 +99,10 @@ namespace NativeSharp {
 		public static extern bool VirtualQueryEx(void* hProcess, void* lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static extern bool VirtualProtectEx(void* hProcess, void* lpAddress, uint dwSize, uint flNewProtect, out uint lpflOldProtect);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		public static extern void* CreateRemoteThread(void* hProcess, void* lpThreadAttributes, uint dwStackSize, void* lpStartAddress, void* lpParameter, uint dwCreationFlags, uint* lpThreadId);
 
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]

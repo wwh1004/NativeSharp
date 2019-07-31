@@ -168,5 +168,33 @@ namespace NativeSharp {
 				return is64Bit ? (ulong)nextAddress_ < (ulong)endAddress_ : (uint)nextAddress_ < (uint)endAddress_;
 			}
 		}
+
+		/// <summary>
+		/// 设置内存保护选项
+		/// </summary>
+		/// <param name="address">起始地址</param>
+		/// <param name="size">内存大小</param>
+		/// <param name="protection">新内存保护选项</param>
+		/// <returns></returns>
+		public bool SetProtection(void* address, uint size, MemoryProtection protection) {
+			return SetProtection(address, size, protection, out _);
+		}
+
+		/// <summary>
+		/// 设置内存保护选项
+		/// </summary>
+		/// <param name="address">起始地址</param>
+		/// <param name="size">内存大小</param>
+		/// <param name="protection">新内存保护选项</param>
+		/// <param name="oldProtection">原来的内存保护选项</param>
+		/// <returns></returns>
+		public bool SetProtection(void* address, uint size, MemoryProtection protection, out MemoryProtection oldProtection) {
+			uint temp;
+			bool result;
+
+			result = VirtualProtectEx(_handle, address, size, (uint)protection, out temp);
+			oldProtection = (MemoryProtection)temp;
+			return result;
+		}
 	}
 }
