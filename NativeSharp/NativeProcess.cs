@@ -129,7 +129,7 @@ namespace NativeSharp {
 		/// <returns></returns>
 		public static NativeProcess UnsafeOpen(void* handle) {
 			if (handle is null)
-				return null;
+				return InvalidProcess;
 
 			uint id;
 
