@@ -9,6 +9,11 @@ namespace NativeSharp {
 		private readonly void* _handle;
 
 		/// <summary>
+		/// 所属进程
+		/// </summary>
+		public NativeProcess Process => _process;
+
+		/// <summary>
 		/// 模块句柄
 		/// </summary>
 		public void* Handle => _handle;
