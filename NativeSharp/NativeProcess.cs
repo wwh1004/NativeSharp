@@ -119,7 +119,7 @@ namespace NativeSharp {
 
 			access |= ProcessAccess.QueryInformation;
 			processHandle = OpenProcess((uint)access, false, id);
-			return processHandle is null ? InvalidProcess : new NativeProcess(id, processHandle, access);
+			return processHandle == null ? InvalidProcess : new NativeProcess(id, processHandle, access);
 		}
 
 		/// <summary>
@@ -128,7 +128,7 @@ namespace NativeSharp {
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
 		public static NativeProcess UnsafeOpen(void* handle) {
-			if (handle is null)
+			if (handle == null)
 				return InvalidProcess;
 
 			uint id;
@@ -144,7 +144,7 @@ namespace NativeSharp {
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
 		public static NativeProcess UnsafeOpen(uint id, void* handle) {
-			return handle is null ? InvalidProcess : new NativeProcess(id, handle, null);
+			return handle == null ? InvalidProcess : new NativeProcess(id, handle, null);
 		}
 
 		/// <summary>

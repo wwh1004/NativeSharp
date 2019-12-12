@@ -168,10 +168,10 @@ namespace NativeSharp {
 			// 加载对应进程位数的mscoree.dll
 			pEnvironment = WriteMachineCode(processHandle, clrVersion, assemblyPath, typeName, methodName, argument);
 			// 获取远程进程中启动CLR的函数指针
-			if (pEnvironment is null)
+			if (pEnvironment == null)
 				return false;
 			threadHandle = CreateRemoteThread(processHandle, null, 0, pEnvironment, ((byte*)pEnvironment + ReturnValueOffset), 0, null);
-			if (threadHandle is null)
+			if (threadHandle == null)
 				return false;
 			if (wait) {
 				WaitForSingleObject(threadHandle, INFINITE);
@@ -198,12 +198,12 @@ namespace NativeSharp {
 			// 获取LoadLibrary的函数地址
 			pDllPath = NativeProcess.AllocMemoryInternal(processHandle, (uint)dllPath.Length * 2 + 2, MemoryProtection.ExecuteRead);
 			try {
-				if (pDllPath is null)
+				if (pDllPath == null)
 					return false;
 				if (!NativeProcess.WriteStringInternal(processHandle, pDllPath, dllPath, Encoding.Unicode))
 					return false;
 				threadHandle = CreateRemoteThread(processHandle, null, 0, pLoadLibrary, pDllPath, 0, null);
-				if (threadHandle is null)
+				if (threadHandle == null)
 					return false;
 				WaitForSingleObject(threadHandle, INFINITE);
 				// 等待线程结束
@@ -238,14 +238,14 @@ namespace NativeSharp {
 			}
 			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
 			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
-			if (pEnvironment is null)
+			if (pEnvironment == null)
 				return null;
 			try {
 				fixed (byte* p = machineCode)
 					switch (clrVersion) {
 					case InjectionClrVersion.V2:
 						pCorBindToRuntimeEx = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CorBindToRuntimeEx");
-						if (pCorBindToRuntimeEx is null)
+						if (pCorBindToRuntimeEx == null)
 							return null;
 						if (is64Bit)
 							WriteMachineCode64v2(p, (ulong)pEnvironment, (ulong)pCorBindToRuntimeEx);
@@ -254,7 +254,7 @@ namespace NativeSharp {
 						break;
 					case InjectionClrVersion.V4:
 						pCLRCreateInstance = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CLRCreateInstance");
-						if (pCLRCreateInstance is null)
+						if (pCLRCreateInstance == null)
 							return null;
 						if (is64Bit)
 							WriteMachineCode64v4(p, (ulong)pEnvironment, (ulong)pCLRCreateInstance);

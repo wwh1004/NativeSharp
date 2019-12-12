@@ -855,12 +855,12 @@ namespace NativeSharp {
 			IList<uint> offsets;
 
 			address = default;
-			if (pointer.BaseAddress is null) {
+			if (pointer.BaseAddress == null) {
 				if (string.IsNullOrEmpty(pointer.ModuleName))
 					throw new ArgumentNullException(nameof(Pointer.ModuleName));
 				pointer.BaseAddress = GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
 			}
-			if (pointer.BaseAddress is null)
+			if (pointer.BaseAddress == null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
 			newAddress = (uint)pointer.BaseAddress;
 			offsets = pointer.Offsets;
@@ -881,12 +881,12 @@ namespace NativeSharp {
 			IList<uint> offsets;
 
 			address = default;
-			if (pointer.BaseAddress is null) {
+			if (pointer.BaseAddress == null) {
 				if (string.IsNullOrEmpty(pointer.ModuleName))
 					throw new ArgumentNullException(nameof(Pointer.ModuleName));
 				pointer.BaseAddress = GetModuleHandleInternal(processHandle, false, pointer.ModuleName);
 			}
-			if (pointer.BaseAddress is null)
+			if (pointer.BaseAddress == null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
 			newAddress = (ulong)pointer.BaseAddress;
 			offsets = pointer.Offsets;

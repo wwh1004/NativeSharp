@@ -68,7 +68,7 @@ namespace NativeSharp {
 
 			QuickDemand(ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, true, null);
-			return moduleHandle is null ? null : UnsafeGetModule(moduleHandle);
+			return moduleHandle == null ? null : UnsafeGetModule(moduleHandle);
 		}
 
 		/// <summary>
@@ -84,7 +84,7 @@ namespace NativeSharp {
 
 			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 			moduleHandle = GetModuleHandleInternal(_handle, false, moduleName);
-			return moduleHandle is null ? null : UnsafeGetModule(moduleHandle);
+			return moduleHandle == null ? null : UnsafeGetModule(moduleHandle);
 		}
 
 		/// <summary>
@@ -93,7 +93,7 @@ namespace NativeSharp {
 		/// <param name="moduleHandle">模块句柄</param>
 		/// <returns></returns>
 		public NativeModule UnsafeGetModule(void* moduleHandle) {
-			if (moduleHandle is null)
+			if (moduleHandle == null)
 				return null;
 
 			return new NativeModule(this, moduleHandle);

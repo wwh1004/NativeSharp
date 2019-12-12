@@ -55,7 +55,7 @@ namespace NativeSharp {
 			void* moduleHandle;
 
 			moduleHandle = NativeProcess.GetModuleHandleInternal(processHandle, false, moduleName);
-			if (moduleHandle is null)
+			if (moduleHandle == null)
 				return null;
 			return GetFunctionAddressInternal(processHandle, moduleHandle, functionName);
 		}
