@@ -13,9 +13,9 @@
 		<LangVersion>8.0</LangVersion>
 		<Nullable>enable</Nullable>
 		<Features>strict</Features>
-		<PackageId>NativeSharp</PackageId>
+		<PackageId>NativeSharp-lib</PackageId>
 		<Authors>Wwh</Authors>
-		<PackageVersion>2.2.3.0</PackageVersion>
+		<PackageVersion>3.0.0.0</PackageVersion>
 		<PackageProjectUrl>https://github.com/wwh1004/NativeSharp</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<IncludeSymbols>true</IncludeSymbols>
