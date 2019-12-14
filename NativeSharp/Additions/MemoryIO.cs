@@ -38,6 +38,7 @@ namespace NativeSharp {
 		/// 构造器
 		/// </summary>
 		public Pointer() {
+			_moduleName = string.Empty;
 			_offsets = new List<uint>();
 		}
 
@@ -57,6 +58,7 @@ namespace NativeSharp {
 		/// <param name="baseAddress">基址</param>
 		/// <param name="offsets">偏移</param>
 		public Pointer(void* baseAddress, params uint[] offsets) {
+			_moduleName = string.Empty;
 			_baseAddress = baseAddress;
 			_offsets = new List<uint>(offsets);
 		}
@@ -486,7 +488,7 @@ namespace NativeSharp {
 		/// <param name="fromEncoding">内存中字符串的编码</param>
 		/// <returns></returns>
 		public bool TryReadString(void* address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
-			value = default;
+			value = string.Empty;
 			if (fromEncoding is null)
 				return false;
 
@@ -975,12 +977,12 @@ namespace NativeSharp {
 			uint dummy;
 
 			if (!ReadInternal(processHandle, address, &dummy, isEndWithDoubleZero ? 2u : 1)) {
-				value = null;
+				value = string.Empty;
 				return false;
 			}
 			using (MemoryStream stream = new MemoryStream((int)BASE_BUFFER_SIZE)) {
 				uint bufferSize;
-				byte[] bytes;
+				byte[]? bytes;
 				bool isZero;
 				bool isLastZero;
 

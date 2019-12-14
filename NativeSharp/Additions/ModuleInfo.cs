@@ -13,7 +13,7 @@ namespace NativeSharp {
 
 				_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 				name = new StringBuilder((int)MAX_MODULE_NAME32);
-				return GetModuleBaseName(_process.Handle, _handle, name, MAX_MODULE_NAME32) ? name.ToString() : null;
+				return GetModuleBaseName(_process.Handle, _handle, name, MAX_MODULE_NAME32) ? name.ToString() : string.Empty;
 			}
 		}
 
@@ -26,7 +26,7 @@ namespace NativeSharp {
 
 				_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
 				iamgePath = new StringBuilder((int)MAX_PATH);
-				return GetModuleFileNameEx(_process.Handle, _handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : null;
+				return GetModuleFileNameEx(_process.Handle, _handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : string.Empty;
 			}
 		}
 

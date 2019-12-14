@@ -19,6 +19,11 @@ namespace NativeSharp {
 		public void* Handle => _handle;
 
 		/// <summary>
+		/// 当前句柄是否为无效句柄
+		/// </summary>
+		public bool IsInvalid => _handle == null;
+
+		/// <summary>
 		/// 构造器
 		/// </summary>
 		/// <param name="process">Win32进程</param>

@@ -5,6 +5,35 @@ using System.Text;
 using static NativeSharp.NativeMethods;
 
 namespace NativeSharp {
+	/// <summary>
+	/// 模块加载方式
+	/// </summary>
+	[Flags]
+	public enum LoadModuleFlags : uint {
+		/// <summary />
+		AsDatafile = 0x00000002,
+		/// <summary />
+		WithAlteredSearchPath = 0x00000008,
+		/// <summary />
+		IgnoreCodeAuthzLevel = 0x00000010,
+		/// <summary />
+		AsImageResource = 0x00000020,
+		/// <summary />
+		AsDatafileExclusive = 0x00000040,
+		/// <summary />
+		RequireSignedTarget = 0x00000080,
+		/// <summary />
+		SearchDllLoadDir = 0x00000100,
+		/// <summary />
+		SearchApplicationDir = 0x00000200,
+		/// <summary />
+		SearchUserDirs = 0x00000400,
+		/// <summary />
+		SearchSystem32 = 0x00000800,
+		/// <summary />
+		SearchDefaultDirs = 0x00001000
+	}
+
 	unsafe partial class NativeProcess {
 		/// <summary>
 		/// 通过进程名称获取进程ID
@@ -29,7 +58,7 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public static uint[] GetAllProcessIds() {
-			uint[] buffer;
+			uint[]? buffer;
 			uint bytesReturned;
 			uint[] processIds;
 
@@ -41,12 +70,34 @@ namespace NativeSharp {
 					buffer = new uint[buffer.Length * 2];
 				fixed (uint* p = buffer)
 					if (!EnumProcesses(p, (uint)(buffer.Length * 4), out bytesReturned))
-						return null;
+						return Array2.Empty<uint>();
 			} while (bytesReturned == buffer.Length * 4);
 			processIds = new uint[bytesReturned / 4];
 			for (int i = 0; i < processIds.Length; i++)
 				processIds[i] = buffer[i];
 			return processIds;
+		}
+
+		/// <summary>
+		/// 为当前进程加载模块
+		/// </summary>
+		/// <param name="modulePath">模块路径</param>
+		/// <returns></returns>
+		public static NativeModule LoadModule(string modulePath) {
+			return LoadModule(modulePath, 0);
+		}
+
+		/// <summary>
+		/// 为当前进程加载模块
+		/// </summary>
+		/// <param name="modulePath">模块路径</param>
+		/// <param name="flags"></param>
+		/// <returns></returns>
+		public static NativeModule LoadModule(string modulePath, LoadModuleFlags flags) {
+			if (string.IsNullOrEmpty(modulePath))
+				throw new ArgumentNullException(nameof(modulePath));
+
+			return CurrentProcess.UnsafeGetModule(LoadLibraryEx(modulePath, null, (uint)flags));
 		}
 
 		internal static bool Is64BitProcessInternal(void* processHandle, out bool is64Bit) {

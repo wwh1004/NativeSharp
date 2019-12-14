@@ -6,37 +6,28 @@ namespace NativeSharp {
 	/// <summary>
 	/// 内存保护选项
 	/// </summary>
+	[Flags]
 	public enum MemoryProtection : uint {
 		/// <summary />
 		NoAccess = 0x01,
-
 		/// <summary />
 		ReadOnly = 0x02,
-
 		/// <summary />
 		ReadWrite = 0x04,
-
 		/// <summary />
 		WriteCopy = 0x08,
-
 		/// <summary />
 		Execute = 0x10,
-
 		/// <summary />
 		ExecuteRead = 0x20,
-
 		/// <summary />
 		ExecuteReadWrite = 0x40,
-
 		/// <summary />
 		ExecuteWriteCopy = 0x80,
-
 		/// <summary />
 		Guard = 0x100,
-
 		/// <summary />
 		NoCache = 0x200,
-
 		/// <summary />
 		WriteCombine = 0x400
 	}
@@ -44,28 +35,22 @@ namespace NativeSharp {
 	/// <summary>
 	/// 内存类型选项
 	/// </summary>
+	[Flags]
 	public enum MemoryType : uint {
 		/// <summary />
 		Commit = 0x00001000,
-
 		/// <summary />
 		Reserve = 0x00002000,
-
 		/// <summary />
 		Decommit = 0x00004000,
-
 		/// <summary />
 		Release = 0x00008000,
-
 		/// <summary />
 		Free = 0x00010000,
-
 		/// <summary />
 		Private = 0x00020000,
-
 		/// <summary />
 		Mapped = 0x00040000,
-
 		/// <summary />
 		Reset = 0x00080000
 	}
@@ -152,11 +137,11 @@ namespace NativeSharp {
 				nextAddress = SafeGetNextAddress(mbi);
 			} while ((long)nextAddress > 0 && NextAddressLessThanEndAddress(nextAddress, endAddress));
 
-			bool SafeIs64BitProcessInternal(IntPtr processHandle_, out bool is64Bit_) {
+			static bool SafeIs64BitProcessInternal(IntPtr processHandle_, out bool is64Bit_) {
 				return Is64BitProcessInternal((void*)processHandle_, out is64Bit_);
 			}
 
-			bool SafeVirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength) {
+			static bool SafeVirtualQueryEx(IntPtr hProcess, IntPtr lpAddress, out MEMORY_BASIC_INFORMATION lpBuffer, uint dwLength) {
 				return VirtualQueryEx((void*)hProcess, (void*)lpAddress, out lpBuffer, dwLength);
 			}
 
@@ -195,6 +180,98 @@ namespace NativeSharp {
 			result = VirtualProtectEx(_handle, address, size, (uint)protection, out temp);
 			oldProtection = (MemoryProtection)temp;
 			return result;
+		}
+
+		/// <summary>
+		/// 分配内存
+		/// </summary>
+		/// <param name="size">大小</param>
+		/// <param name="writable">是否可写</param>
+		/// <param name="executable">是否可执行</param>
+		/// <returns></returns>
+		public void* AllocMemory(uint size, bool writable, bool executable) {
+			QuickDemand(ProcessAccess.MemoryOperation);
+			return AllocMemoryInternal(_handle, size, ToProtection(writable, executable));
+		}
+
+		/// <summary>
+		/// 分配内存
+		/// </summary>
+		/// <param name="size">大小</param>
+		/// <param name="protection">选项</param>
+		/// <returns></returns>
+		public void* AllocMemory(uint size, MemoryProtection protection) {
+			QuickDemand(ProcessAccess.MemoryOperation);
+			return AllocMemoryInternal(_handle, size, protection);
+		}
+
+		/// <summary>
+		/// 分配内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="size">大小</param>
+		/// <param name="protection">选项</param>
+		/// <returns></returns>
+		public void* AllocMemory(void* address, uint size, MemoryProtection protection) {
+			QuickDemand(ProcessAccess.MemoryOperation);
+			return AllocMemoryInternal(_handle, address, size, protection);
+		}
+
+		internal static void* AllocMemoryInternal(void* processHandle, uint size, bool writable, bool executable) {
+			return AllocMemoryInternal(processHandle, size, ToProtection(writable, executable));
+		}
+
+		internal static void* AllocMemoryInternal(void* processHandle, uint size, MemoryProtection protection) {
+			return VirtualAllocEx(processHandle, null, size, (uint)MemoryType.Commit, (uint)protection);
+		}
+
+		internal static void* AllocMemoryInternal(void* processHandle, void* address, uint size, MemoryProtection protection) {
+			return VirtualAllocEx(processHandle, address, size, (uint)MemoryType.Commit, (uint)protection);
+		}
+
+		private static MemoryProtection ToProtection(bool writable, bool executable) {
+			if (writable) {
+				if (executable)
+					return MemoryProtection.ExecuteReadWrite;
+				else
+					return MemoryProtection.ReadWrite;
+			}
+			else {
+				if (executable)
+					return MemoryProtection.ExecuteRead;
+				else
+					return MemoryProtection.ReadOnly;
+			}
+		}
+
+		/// <summary>
+		/// 释放内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <returns></returns>
+		public bool FreeMemory(void* address) {
+			QuickDemand(ProcessAccess.MemoryOperation);
+			return FreeMemoryInternal(_handle, address);
+		}
+
+		/// <summary>
+		/// 释放内存
+		/// </summary>
+		/// <param name="address">地址</param>
+		/// <param name="size">大小</param>
+		/// <param name="type">选项</param>
+		/// <returns></returns>
+		public bool FreeMemory(void* address, uint size, MemoryType type) {
+			QuickDemand(ProcessAccess.MemoryOperation);
+			return FreeMemoryInternal(_handle, address, size, type);
+		}
+
+		internal static bool FreeMemoryInternal(void* processHandle, void* address) {
+			return VirtualFreeEx(processHandle, address, 0, (uint)MemoryType.Decommit);
+		}
+
+		internal static bool FreeMemoryInternal(void* processHandle, void* address, uint size, MemoryType type) {
+			return VirtualFreeEx(processHandle, address, size, (uint)type);
 		}
 	}
 }

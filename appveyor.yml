@@ -1,18 +1,32 @@
 version: '{build}'
-image: Visual Studio 2019 Preview
+image: Visual Studio 2019
 configuration: Release
 platform: Any CPU
 build:
   project: NativeSharp.sln
   verbosity: normal
+after_build:
+- cmd: >-
+    dotnet pack NativeSharp\NativeSharp.csproj -c Release
 artifacts:
-- path: bin\Release
-  name: NativeSharp
+- path: bin\Release\net20
+  name: NativeSharp-net20
+- path: bin\Release\net40
+  name: NativeSharp-net40
+- path: bin\Release\netstandard1.3
+  name: NativeSharp-netstandard1.3
+- path: bin\Release\*.*nupkg
+  name: NativeSharp NuGet Packages
 deploy:
 - provider: GitHub
   tag: $(APPVEYOR_REPO_TAG_NAME)
   release: NativeSharp
   auth_token:
     secure: +8UJ1C312inNq+80I8WST34vPMrCylnmTx+9rmuIh1qnsArA5x2b8yc+kcwkXmQC
+  on:
+    APPVEYOR_REPO_TAG: true
+- provider: NuGet
+  api_key:
+    secure: 4dEpGPHenvp4U4i1gqj9WjClPirE4R0SjMVsaYraUyQMIbPFOMvhRG8j4iq6/qzE
   on:
     APPVEYOR_REPO_TAG: true

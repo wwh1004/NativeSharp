@@ -32,7 +32,7 @@ namespace NativeSharp {
 
 				QuickDemand(ProcessAccess.QueryInformation);
 				iamgePath = new StringBuilder((int)MAX_PATH);
-				return GetProcessImageFileName(_handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : null;
+				return GetProcessImageFileName(_handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : string.Empty;
 			}
 		}
 
@@ -48,14 +48,14 @@ namespace NativeSharp {
 
 			QuickDemand(ProcessAccess.QueryInformation);
 			if (!EnumProcessModulesEx(_handle, &moduleHandle, (uint)IntPtr.Size, out size, LIST_MODULES_ALL))
-				return null;
+				return Array2.Empty<NativeModule>();
 			moduleHandles = new void*[size / (uint)IntPtr.Size];
 			fixed (void** p = moduleHandles)
 				if (!EnumProcessModulesEx(_handle, p, size, out _, LIST_MODULES_ALL))
-					return null;
+					return Array2.Empty<NativeModule>();
 			modules = new NativeModule[moduleHandles.Length];
 			for (int i = 0; i < modules.Length; i++)
-				modules[i] = new NativeModule(this, moduleHandles[i]);
+				modules[i] = UnsafeGetModule(moduleHandles[i]);
 			return modules;
 		}
 
@@ -64,11 +64,8 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public NativeModule GetMainModule() {
-			void* moduleHandle;
-
 			QuickDemand(ProcessAccess.QueryInformation);
-			moduleHandle = GetModuleHandleInternal(_handle, true, null);
-			return moduleHandle == null ? null : UnsafeGetModule(moduleHandle);
+			return UnsafeGetModule(IsCurrentProcess ? GetModuleHandle(null) : GetModuleHandleInternal(_handle, true, string.Empty));
 		}
 
 		/// <summary>
@@ -80,11 +77,8 @@ namespace NativeSharp {
 			if (string.IsNullOrEmpty(moduleName))
 				throw new ArgumentNullException(nameof(moduleName));
 
-			void* moduleHandle;
-
 			QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-			moduleHandle = GetModuleHandleInternal(_handle, false, moduleName);
-			return moduleHandle == null ? null : UnsafeGetModule(moduleHandle);
+			return UnsafeGetModule(IsCurrentProcess ? GetModuleHandle(moduleName) : GetModuleHandleInternal(_handle, false, moduleName));
 		}
 
 		/// <summary>
@@ -93,9 +87,6 @@ namespace NativeSharp {
 		/// <param name="moduleHandle">模块句柄</param>
 		/// <returns></returns>
 		public NativeModule UnsafeGetModule(void* moduleHandle) {
-			if (moduleHandle == null)
-				return null;
-
 			return new NativeModule(this, moduleHandle);
 		}
 

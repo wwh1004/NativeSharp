@@ -74,6 +74,11 @@ namespace NativeSharp {
 		public static NativeProcess CurrentProcess => _currentProcess;
 
 		/// <summary>
+		/// 当前实例是否当前进程
+		/// </summary>
+		public bool IsCurrentProcess => this == CurrentProcess;
+
+		/// <summary>
 		/// 进程ID
 		/// </summary>
 		public uint Id {
@@ -92,6 +97,11 @@ namespace NativeSharp {
 				return _handle;
 			}
 		}
+
+		/// <summary>
+		/// 当前句柄是否为无效句柄
+		/// </summary>
+		public bool IsInvalid => _handle == null;
 
 		private NativeProcess(uint id, void* handle, ProcessAccess? access) {
 			_id = id;

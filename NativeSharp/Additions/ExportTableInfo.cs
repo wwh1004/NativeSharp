@@ -8,6 +8,11 @@ namespace NativeSharp {
 	/// 导出函数信息
 	/// </summary>
 	public sealed unsafe class ExportFunctionInfo {
+		/// <summary>
+		/// 表示一个空的实例
+		/// </summary>
+		public readonly static ExportFunctionInfo Empty = new ExportFunctionInfo(null, string.Empty, 0);
+
 		private readonly void* _address;
 		private readonly string _name;
 		private readonly ushort _ordinal;
@@ -34,8 +39,11 @@ namespace NativeSharp {
 		/// <param name="name">名称</param>
 		/// <param name="ordinal">序号</param>
 		public ExportFunctionInfo(void* address, string name, ushort ordinal) {
+			if (name is null)
+				throw new ArgumentNullException(nameof(name));
+
 			_address = address;
-			_name = name ?? string.Empty;
+			_name = name;
 			_ordinal = ordinal;
 		}
 	}
@@ -90,15 +98,6 @@ namespace NativeSharp {
 			return EnumerateFunctionInfosInternal((IntPtr)_process.Handle, (IntPtr)_handle);
 		}
 
-		internal static IEnumerable<ExportFunctionInfo> EnumerateFunctionInfosInternal(IntPtr processHandle, string moduleName) {
-			IntPtr moduleHandle;
-
-			moduleHandle = (IntPtr)NativeProcess.GetModuleHandleInternal((void*)processHandle, false, moduleName);
-			if (moduleHandle == IntPtr.Zero)
-				return null;
-			return EnumerateFunctionInfosInternal(processHandle, moduleHandle);
-		}
-
 		internal static IEnumerable<ExportFunctionInfo> EnumerateFunctionInfosInternal(IntPtr processHandle, IntPtr moduleHandle) {
 			IMAGE_EXPORT_DIRECTORY ied;
 			uint[] nameOffsets;
@@ -121,7 +120,7 @@ namespace NativeSharp {
 			uint iedRVA;
 
 			ied = default;
-			nameOffsets = null;
+			nameOffsets = Array2.Empty<uint>();
 			if (!NativeProcess.ReadUInt32Internal((void*)processHandle, (byte*)moduleHandle + 0x3C, out ntHeaderOffset))
 				return false;
 			if (!NativeProcess.Is64BitProcessInternal((void*)processHandle, out is64Bit))
@@ -151,7 +150,7 @@ namespace NativeSharp {
 			ushort ordinal;
 			uint addressOffset;
 
-			functionInfo = default;
+			functionInfo = ExportFunctionInfo.Empty;
 			if (!NativeProcess.ReadStringInternal((void*)processHandle, (byte*)moduleHandle + nameOffsets[i], out functionName, false, Encoding.ASCII))
 				return false;
 			if (!NativeProcess.ReadUInt16Internal((void*)processHandle, (byte*)moduleHandle + ied.AddressOfNameOrdinals + i * 2, out ordinal))

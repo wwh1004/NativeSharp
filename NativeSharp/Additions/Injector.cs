@@ -226,16 +226,12 @@ namespace NativeSharp {
 
 			if (!NativeProcess.Is64BitProcessInternal(processHandle, out is64Bit))
 				return null;
-			switch (clrVersion) {
-			case InjectionClrVersion.V2:
-				clrVersionString = CLR_V2;
-				break;
-			case InjectionClrVersion.V4:
-				clrVersionString = CLR_V4;
-				break;
-			default:
-				throw new ArgumentOutOfRangeException(nameof(clrVersion));
-			}
+			clrVersionString = clrVersion switch
+			{
+				InjectionClrVersion.V2 => CLR_V2,
+				InjectionClrVersion.V4 => CLR_V4,
+				_ => throw new ArgumentOutOfRangeException(nameof(clrVersion)),
+			};
 			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
 			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
 			if (pEnvironment == null)
@@ -288,7 +284,7 @@ namespace NativeSharp {
 				stream.Position = MethodNameOffset;
 				stream.Write(buffer, 0, buffer.Length);
 				// methodName
-				buffer = argument is null ? new byte[0] : Encoding.Unicode.GetBytes(argument);
+				buffer = argument is null ? Array2.Empty<byte>() : Encoding.Unicode.GetBytes(argument);
 				stream.Position = ArgumentOffset;
 				stream.Write(buffer, 0, buffer.Length);
 				// argument
@@ -1244,21 +1240,14 @@ namespace NativeSharp {
 		}
 
 		private static void IsAssembly(string path, out bool isAssembly, out InjectionClrVersion clrVersion) {
-			BinaryReader binaryReader;
-
 			try {
-				using (binaryReader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read)))
-					switch (GetVersionString(binaryReader)) {
-					case CLR_V2:
-						clrVersion = InjectionClrVersion.V2;
-						break;
-					case CLR_V4:
-						clrVersion = InjectionClrVersion.V4;
-						break;
-					default:
-						clrVersion = default;
-						break;
-					}
+				using (BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read)))
+					clrVersion = GetVersionString(reader) switch
+					{
+						CLR_V2 => InjectionClrVersion.V2,
+						CLR_V4 => InjectionClrVersion.V4,
+						_ => default,
+					};
 				isAssembly = true;
 			}
 			catch {

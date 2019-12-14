@@ -111,5 +111,11 @@ namespace NativeSharp {
 		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool GetExitCodeThread(void* hThread, out uint lpExitCode);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		public static extern void* GetModuleHandle(string? lpModuleName);
+
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		public static extern void* LoadLibraryEx(string? lpLibFileName, void* hFile, uint dwFlags);
 	}
 }
