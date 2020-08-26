@@ -10,10 +10,8 @@ namespace NativeSharp {
 		/// </summary>
 		public bool Is64Bit {
 			get {
-				bool is64Bit;
-
 				QuickDemand(ProcessAccess.QueryInformation);
-				Is64BitProcessInternal(_handle, out is64Bit);
+				Is64BitProcessInternal(_handle, out bool is64Bit);
 				return is64Bit;
 			}
 		}
@@ -28,10 +26,8 @@ namespace NativeSharp {
 		/// </summary>
 		public string ImagePath {
 			get {
-				StringBuilder iamgePath;
-
 				QuickDemand(ProcessAccess.QueryInformation);
-				iamgePath = new StringBuilder((int)MAX_PATH);
+				var iamgePath = new StringBuilder((int)MAX_PATH);
 				return GetProcessImageFileName(_handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : string.Empty;
 			}
 		}
@@ -41,19 +37,16 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public NativeModule[] GetModules() {
-			void* moduleHandle;
-			uint size;
-			void*[] moduleHandles;
-			NativeModule[] modules;
-
 			QuickDemand(ProcessAccess.QueryInformation);
-			if (!EnumProcessModulesEx(_handle, &moduleHandle, (uint)IntPtr.Size, out size, LIST_MODULES_ALL))
+			void* moduleHandle;
+			if (!EnumProcessModulesEx(_handle, &moduleHandle, (uint)IntPtr.Size, out uint size, LIST_MODULES_ALL))
 				return Array2.Empty<NativeModule>();
-			moduleHandles = new void*[size / (uint)IntPtr.Size];
-			fixed (void** p = moduleHandles)
+			void*[]? moduleHandles = new void*[size / (uint)IntPtr.Size];
+			fixed (void** p = moduleHandles) {
 				if (!EnumProcessModulesEx(_handle, p, size, out _, LIST_MODULES_ALL))
 					return Array2.Empty<NativeModule>();
-			modules = new NativeModule[moduleHandles.Length];
+			}
+			var modules = new NativeModule[moduleHandles.Length];
 			for (int i = 0; i < modules.Length; i++)
 				modules[i] = UnsafeGetModule(moduleHandles[i]);
 			return modules;
@@ -92,7 +85,7 @@ namespace NativeSharp {
 
 		/// <summary />
 		public override string ToString() {
-			return $"{Name} (Id: 0x{Id.ToString("X")})";
+			return $"{Name} (Id: 0x{Id:X})";
 		}
 	}
 }

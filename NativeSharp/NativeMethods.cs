@@ -9,7 +9,7 @@ namespace NativeSharp {
 		public const uint MAX_PATH = 260;
 		public const uint INFINITE = 0xFFFFFFFF;
 
-		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+		[StructLayout(LayoutKind.Sequential)]
 		public struct MEMORY_BASIC_INFORMATION {
 			public static readonly uint UnmanagedSize = (uint)sizeof(MEMORY_BASIC_INFORMATION);
 
@@ -22,7 +22,7 @@ namespace NativeSharp {
 			public uint Type;
 		}
 
-		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+		[StructLayout(LayoutKind.Sequential)]
 		public struct IMAGE_EXPORT_DIRECTORY {
 			public static readonly uint UnmanagedSize = (uint)sizeof(IMAGE_EXPORT_DIRECTORY);
 

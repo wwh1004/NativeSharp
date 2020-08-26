@@ -9,10 +9,8 @@ namespace NativeSharp {
 		/// </summary>
 		public string Name {
 			get {
-				StringBuilder name;
-
 				_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-				name = new StringBuilder((int)MAX_MODULE_NAME32);
+				var name = new StringBuilder((int)MAX_MODULE_NAME32);
 				return GetModuleBaseName(_process.Handle, _handle, name, MAX_MODULE_NAME32) ? name.ToString() : string.Empty;
 			}
 		}
@@ -22,10 +20,8 @@ namespace NativeSharp {
 		/// </summary>
 		public string ImagePath {
 			get {
-				StringBuilder iamgePath;
-
 				_process.QuickDemand(ProcessAccess.MemoryRead | ProcessAccess.QueryInformation);
-				iamgePath = new StringBuilder((int)MAX_PATH);
+				var iamgePath = new StringBuilder((int)MAX_PATH);
 				return GetModuleFileNameEx(_process.Handle, _handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : string.Empty;
 			}
 		}

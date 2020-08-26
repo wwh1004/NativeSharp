@@ -149,16 +149,10 @@ namespace NativeSharp {
 		}
 
 		internal static bool InjectManagedInternal(void* processHandle, string assemblyPath, string typeName, string methodName, string argument, InjectionClrVersion clrVersion, out int returnValue, bool wait) {
-			bool isAssembly;
-			InjectionClrVersion clrVersionTemp;
-			void* pEnvironment;
-			void* threadHandle;
-			uint exitCode;
-
 			returnValue = 0;
 			assemblyPath = Path.GetFullPath(assemblyPath);
 			// 获取绝对路径
-			IsAssembly(assemblyPath, out isAssembly, out clrVersionTemp);
+			IsAssembly(assemblyPath, out bool isAssembly, out var clrVersionTemp);
 			if (clrVersion == InjectionClrVersion.Auto)
 				clrVersion = clrVersionTemp;
 			if (!isAssembly)
@@ -166,19 +160,19 @@ namespace NativeSharp {
 			if (!InjectUnmanagedInternal(processHandle, Path.Combine(Environment.GetEnvironmentVariable("SystemRoot"), @"System32\mscoree.dll")))
 				return false;
 			// 加载对应进程位数的mscoree.dll
-			pEnvironment = WriteMachineCode(processHandle, clrVersion, assemblyPath, typeName, methodName, argument);
+			void* pEnvironment = WriteMachineCode(processHandle, clrVersion, assemblyPath, typeName, methodName, argument);
 			// 获取远程进程中启动CLR的函数指针
 			if (pEnvironment == null)
 				return false;
-			threadHandle = CreateRemoteThread(processHandle, null, 0, pEnvironment, ((byte*)pEnvironment + ReturnValueOffset), 0, null);
+			void* threadHandle = CreateRemoteThread(processHandle, null, 0, pEnvironment, (byte*)pEnvironment + ReturnValueOffset, 0, null);
 			if (threadHandle == null)
 				return false;
 			if (wait) {
 				WaitForSingleObject(threadHandle, INFINITE);
 				// 等待线程结束
-				if (!GetExitCodeThread(threadHandle, out exitCode))
+				if (!GetExitCodeThread(threadHandle, out uint exitCode))
 					return false;
-				if (!NativeProcess.ReadInt32Internal(processHandle, ((byte*)pEnvironment + ReturnValueOffset), out returnValue))
+				if (!NativeProcess.ReadInt32Internal(processHandle, (byte*)pEnvironment + ReturnValueOffset, out returnValue))
 					return false;
 				// 获取程序集中被调用方法的返回值
 				if (!NativeProcess.FreeMemoryInternal(processHandle, pEnvironment))
@@ -189,25 +183,20 @@ namespace NativeSharp {
 		}
 
 		internal static bool InjectUnmanagedInternal(void* processHandle, string dllPath) {
-			void* pLoadLibrary;
-			void* pDllPath;
-			void* threadHandle;
-			uint exitCode;
-
-			pLoadLibrary = NativeModule.GetFunctionAddressInternal(processHandle, "kernel32.dll", "LoadLibraryW");
+			void* pLoadLibrary = NativeModule.GetFunctionAddressInternal(processHandle, "kernel32.dll", "LoadLibraryW");
 			// 获取LoadLibrary的函数地址
-			pDllPath = NativeProcess.AllocMemoryInternal(processHandle, (uint)dllPath.Length * 2 + 2, MemoryProtection.ExecuteRead);
+			void* pDllPath = NativeProcess.AllocMemoryInternal(processHandle, ((uint)dllPath.Length * 2) + 2, MemoryProtection.ExecuteRead);
+			if (pDllPath == null)
+				return false;
 			try {
-				if (pDllPath == null)
-					return false;
 				if (!NativeProcess.WriteStringInternal(processHandle, pDllPath, dllPath, Encoding.Unicode))
 					return false;
-				threadHandle = CreateRemoteThread(processHandle, null, 0, pLoadLibrary, pDllPath, 0, null);
+				void* threadHandle = CreateRemoteThread(processHandle, null, 0, pLoadLibrary, pDllPath, 0, null);
 				if (threadHandle == null)
 					return false;
 				WaitForSingleObject(threadHandle, INFINITE);
 				// 等待线程结束
-				GetExitCodeThread(threadHandle, out exitCode);
+				GetExitCodeThread(threadHandle, out uint exitCode);
 				return exitCode != 0;
 				// LoadLibrary返回值不为0则调用成功，否则失败
 			}
@@ -217,30 +206,23 @@ namespace NativeSharp {
 		}
 
 		private static void* WriteMachineCode(void* processHandle, InjectionClrVersion clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
-			bool is64Bit;
-			string clrVersionString;
-			byte[] machineCode;
-			void* pEnvironment;
-			void* pCorBindToRuntimeEx;
-			void* pCLRCreateInstance;
-
-			if (!NativeProcess.Is64BitProcessInternal(processHandle, out is64Bit))
+			if (!NativeProcess.Is64BitProcessInternal(processHandle, out bool is64Bit))
 				return null;
-			clrVersionString = clrVersion switch
+			string clrVersionString = clrVersion switch
 			{
 				InjectionClrVersion.V2 => CLR_V2,
 				InjectionClrVersion.V4 => CLR_V4,
 				_ => throw new ArgumentOutOfRangeException(nameof(clrVersion)),
 			};
-			machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
-			pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : (uint)argument.Length * 2 + 2), MemoryProtection.ExecuteReadWrite);
+			byte[] machineCode = GetMachineCodeTemplate(clrVersionString, assemblyPath, typeName, methodName, argument);
+			void* pEnvironment = NativeProcess.AllocMemoryInternal(processHandle, 0x1000 + (argument is null ? 0 : ((uint)argument.Length * 2) + 2), MemoryProtection.ExecuteReadWrite);
 			if (pEnvironment == null)
 				return null;
 			try {
 				fixed (byte* p = machineCode)
 					switch (clrVersion) {
 					case InjectionClrVersion.V2:
-						pCorBindToRuntimeEx = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CorBindToRuntimeEx");
+						void* pCorBindToRuntimeEx = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CorBindToRuntimeEx");
 						if (pCorBindToRuntimeEx == null)
 							return null;
 						if (is64Bit)
@@ -249,7 +231,7 @@ namespace NativeSharp {
 							WriteMachineCode32v2(p, (uint)pEnvironment, (uint)pCorBindToRuntimeEx);
 						break;
 					case InjectionClrVersion.V4:
-						pCLRCreateInstance = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CLRCreateInstance");
+						void* pCLRCreateInstance = NativeModule.GetFunctionAddressInternal(processHandle, "mscoree.dll", "CLRCreateInstance");
 						if (pCLRCreateInstance == null)
 							return null;
 						if (is64Bit)
@@ -269,42 +251,39 @@ namespace NativeSharp {
 		}
 
 		private static byte[] GetMachineCodeTemplate(string clrVersion, string assemblyPath, string typeName, string methodName, string argument) {
-			byte[] buffer;
-
-			using (MemoryStream stream = new MemoryStream(0x1000 + (argument is null ? 0 : argument.Length * 2))) {
-				buffer = Encoding.Unicode.GetBytes(assemblyPath);
-				stream.Position = AssemblyPathOffset;
-				stream.Write(buffer, 0, buffer.Length);
-				// assemblyPath
-				buffer = Encoding.Unicode.GetBytes(typeName);
-				stream.Position = TypeNameOffset;
-				stream.Write(buffer, 0, buffer.Length);
-				// typeName
-				buffer = Encoding.Unicode.GetBytes(methodName);
-				stream.Position = MethodNameOffset;
-				stream.Write(buffer, 0, buffer.Length);
-				// methodName
-				buffer = argument is null ? Array2.Empty<byte>() : Encoding.Unicode.GetBytes(argument);
-				stream.Position = ArgumentOffset;
-				stream.Write(buffer, 0, buffer.Length);
-				// argument
-				buffer = Encoding.Unicode.GetBytes(clrVersion);
-				stream.Position = CLRVersionOffset;
-				stream.Write(buffer, 0, buffer.Length);
-				// clrVersion
-				stream.Position = CLSID_CLRMetaHostOffset;
-				stream.Write(CLSID_CLRMetaHost, 0, CLSID_CLRMetaHost.Length);
-				stream.Position = IID_ICLRMetaHostOffset;
-				stream.Write(IID_ICLRMetaHost, 0, IID_ICLRMetaHost.Length);
-				stream.Position = IID_ICLRRuntimeInfoOffset;
-				stream.Write(IID_ICLRRuntimeInfo, 0, IID_ICLRRuntimeInfo.Length);
-				stream.Position = CLSID_CLRRuntimeHostOffset;
-				stream.Write(CLSID_CLRRuntimeHost, 0, CLSID_CLRRuntimeHost.Length);
-				stream.Position = IID_ICLRRuntimeHostOffset;
-				stream.Write(IID_ICLRRuntimeHost, 0, IID_ICLRRuntimeHost.Length);
-				stream.SetLength(stream.Capacity);
-				return stream.ToArray();
-			}
+			using var stream = new MemoryStream(0x1000 + (argument is null ? 0 : argument.Length * 2));
+			byte[] buffer = Encoding.Unicode.GetBytes(assemblyPath);
+			stream.Position = AssemblyPathOffset;
+			stream.Write(buffer, 0, buffer.Length);
+			// assemblyPath
+			buffer = Encoding.Unicode.GetBytes(typeName);
+			stream.Position = TypeNameOffset;
+			stream.Write(buffer, 0, buffer.Length);
+			// typeName
+			buffer = Encoding.Unicode.GetBytes(methodName);
+			stream.Position = MethodNameOffset;
+			stream.Write(buffer, 0, buffer.Length);
+			// methodName
+			buffer = argument is null ? Array2.Empty<byte>() : Encoding.Unicode.GetBytes(argument);
+			stream.Position = ArgumentOffset;
+			stream.Write(buffer, 0, buffer.Length);
+			// argument
+			buffer = Encoding.Unicode.GetBytes(clrVersion);
+			stream.Position = CLRVersionOffset;
+			stream.Write(buffer, 0, buffer.Length);
+			// clrVersion
+			stream.Position = CLSID_CLRMetaHostOffset;
+			stream.Write(CLSID_CLRMetaHost, 0, CLSID_CLRMetaHost.Length);
+			stream.Position = IID_ICLRMetaHostOffset;
+			stream.Write(IID_ICLRMetaHost, 0, IID_ICLRMetaHost.Length);
+			stream.Position = IID_ICLRRuntimeInfoOffset;
+			stream.Write(IID_ICLRRuntimeInfo, 0, IID_ICLRRuntimeInfo.Length);
+			stream.Position = CLSID_CLRRuntimeHostOffset;
+			stream.Write(CLSID_CLRRuntimeHost, 0, CLSID_CLRRuntimeHost.Length);
+			stream.Position = IID_ICLRRuntimeHostOffset;
+			stream.Write(IID_ICLRRuntimeHost, 0, IID_ICLRRuntimeHost.Length);
+			stream.SetLength(stream.Capacity);
+			return stream.ToArray();
 		}
 
 		private static void WriteMachineCode32v2(byte* p, uint pFunction, uint pCorBindToRuntimeEx) {
@@ -1241,13 +1220,14 @@ namespace NativeSharp {
 
 		private static void IsAssembly(string path, out bool isAssembly, out InjectionClrVersion clrVersion) {
 			try {
-				using (BinaryReader reader = new BinaryReader(new FileStream(path, FileMode.Open, FileAccess.Read)))
-					clrVersion = GetVersionString(reader) switch
-					{
-						CLR_V2 => InjectionClrVersion.V2,
-						CLR_V4 => InjectionClrVersion.V4,
-						_ => default,
-					};
+				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read)) ;
+				using var reader = new BinaryReader(stream);
+				clrVersion = GetVersionString(reader) switch
+				{
+					CLR_V2 => InjectionClrVersion.V2,
+					CLR_V4 => InjectionClrVersion.V4,
+					_ => default,
+				};
 				isAssembly = true;
 			}
 			catch {
@@ -1257,20 +1237,14 @@ namespace NativeSharp {
 		}
 
 		private static string GetVersionString(BinaryReader binaryReader) {
-			uint peOffset;
-			bool is64Bit;
-			SectionHeader[] sectionHeaders;
-			uint rva;
-			SectionHeader sectionHeader;
-
-			GetPEInfo(binaryReader, out peOffset, out is64Bit);
+			GetPEInfo(binaryReader, out uint peOffset, out bool is64Bit);
 			binaryReader.BaseStream.Position = peOffset + (is64Bit ? 0xF8 : 0xE8);
-			rva = binaryReader.ReadUInt32();
+			uint rva = binaryReader.ReadUInt32();
 			// .Net Metadata Directory RVA
 			if (rva == 0)
 				throw new BadImageFormatException("File isn't a valid .NET assembly.");
-			sectionHeaders = GetSectionHeaders(binaryReader);
-			sectionHeader = GetSectionHeader(rva, sectionHeaders);
+			var sectionHeaders = GetSectionHeaders(binaryReader);
+			var sectionHeader = GetSectionHeader(rva, sectionHeaders);
 			binaryReader.BaseStream.Position = sectionHeader.RawAddress + rva - sectionHeader.VirtualAddress + 0x8;
 			// .Net Metadata Directory FileOffset
 			rva = binaryReader.ReadUInt32();
@@ -1284,27 +1258,20 @@ namespace NativeSharp {
 		}
 
 		private static void GetPEInfo(BinaryReader binaryReader, out uint peOffset, out bool is64Bit) {
-			ushort machine;
-
 			binaryReader.BaseStream.Position = 0x3C;
 			peOffset = binaryReader.ReadUInt32();
 			binaryReader.BaseStream.Position = peOffset + 0x4;
-			machine = binaryReader.ReadUInt16();
+			ushort machine = binaryReader.ReadUInt16();
 			if (machine != 0x14C && machine != 0x8664)
 				throw new BadImageFormatException("Invalid \"Machine\" in FileHeader.");
 			is64Bit = machine == 0x8664;
 		}
 
 		private static SectionHeader[] GetSectionHeaders(BinaryReader binaryReader) {
-			uint ntHeaderOffset;
-			bool is64Bit;
-			ushort numberOfSections;
-			SectionHeader[] sectionHeaders;
-
-			GetPEInfo(binaryReader, out ntHeaderOffset, out is64Bit);
-			numberOfSections = binaryReader.ReadUInt16();
+			GetPEInfo(binaryReader, out uint ntHeaderOffset, out bool is64Bit);
+			ushort numberOfSections = binaryReader.ReadUInt16();
 			binaryReader.BaseStream.Position = ntHeaderOffset + (is64Bit ? 0x108 : 0xF8);
-			sectionHeaders = new SectionHeader[numberOfSections];
+			var sectionHeaders = new SectionHeader[numberOfSections];
 			for (int i = 0; i < numberOfSections; i++) {
 				binaryReader.BaseStream.Position += 0x8;
 				sectionHeaders[i] = new SectionHeader(binaryReader.ReadUInt32(), binaryReader.ReadUInt32(), binaryReader.ReadUInt32(), binaryReader.ReadUInt32());
@@ -1314,9 +1281,10 @@ namespace NativeSharp {
 		}
 
 		private static SectionHeader GetSectionHeader(uint rva, SectionHeader[] sectionHeaders) {
-			foreach (SectionHeader sectionHeader in sectionHeaders)
+			foreach (var sectionHeader in sectionHeaders) {
 				if (rva >= sectionHeader.VirtualAddress && rva < sectionHeader.VirtualAddress + Math.Max(sectionHeader.VirtualSize, sectionHeader.RawSize))
 					return sectionHeader;
+			}
 			throw new BadImageFormatException("Can't get section from specific RVA.");
 		}
 	}

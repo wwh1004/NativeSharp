@@ -53,9 +53,7 @@ namespace NativeSharp {
 	/// Win32进程
 	/// </summary>
 	public sealed unsafe partial class NativeProcess : IDisposable {
-		private static readonly NativeProcess _invalidProcess = new NativeProcess(0, null, 0) {
-			_isDisposed = true
-		};
+		private static readonly NativeProcess _invalidProcess = new NativeProcess(0, null, 0) { _isDisposed = true };
 		private static readonly NativeProcess _currentProcess = new NativeProcess(GetCurrentProcessId(), GetCurrentProcess(), ProcessAccess.AllAccess);
 
 		private readonly uint _id;
@@ -125,10 +123,8 @@ namespace NativeSharp {
 		/// <param name="access">权限</param>
 		/// <returns></returns>
 		public static NativeProcess Open(uint id, ProcessAccess access) {
-			void* processHandle;
-
 			access |= ProcessAccess.QueryInformation;
-			processHandle = OpenProcess((uint)access, false, id);
+			void* processHandle = OpenProcess((uint)access, false, id);
 			return processHandle == null ? InvalidProcess : new NativeProcess(id, processHandle, access);
 		}
 
@@ -141,10 +137,8 @@ namespace NativeSharp {
 			if (handle == null)
 				return InvalidProcess;
 
-			uint id;
-
-			id = GetProcessId(handle);
-			return id == 0 ? InvalidProcess : new NativeProcess(id, handle, null);
+			uint id = GetProcessId(handle);
+			return id != 0 ? new NativeProcess(id, handle, null) : InvalidProcess;
 		}
 
 		/// <summary>
@@ -154,7 +148,7 @@ namespace NativeSharp {
 		/// <param name="handle">进程句柄</param>
 		/// <returns></returns>
 		public static NativeProcess UnsafeOpen(uint id, void* handle) {
-			return handle == null ? InvalidProcess : new NativeProcess(id, handle, null);
+			return handle != null ? new NativeProcess(id, handle, null) : InvalidProcess;
 		}
 
 		/// <summary>
@@ -176,7 +170,7 @@ namespace NativeSharp {
 		public bool QuickDemandNoThrow(ProcessAccess requireAccess) {
 			if (_isDisposed)
 				throw new ObjectDisposedException(nameof(NativeProcess));
-			return _access is null || (_access.Value & requireAccess) == requireAccess;
+			return !_access.HasValue || (_access.Value & requireAccess) == requireAccess;
 		}
 
 		/// <summary />

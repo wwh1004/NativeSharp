@@ -44,13 +44,13 @@ namespace NativeSharp {
 			if (string.IsNullOrEmpty(processName))
 				throw new ArgumentNullException(nameof(processName));
 
-			foreach (uint processId in GetAllProcessIds())
-				using (NativeProcess process = Open(processId, ProcessAccess.QueryInformation)) {
-					if (process == InvalidProcess)
-						continue;
-					if (string.Equals(process.Name, processName, StringComparison.OrdinalIgnoreCase))
-						yield return processId;
-				}
+			foreach (uint processId in GetAllProcessIds()) {
+				using var process = Open(processId, ProcessAccess.QueryInformation);
+				if (process == InvalidProcess)
+					continue;
+				if (string.Equals(process.Name, processName, StringComparison.OrdinalIgnoreCase))
+					yield return processId;
+			}
 		}
 
 		/// <summary>
@@ -58,11 +58,8 @@ namespace NativeSharp {
 		/// </summary>
 		/// <returns></returns>
 		public static uint[] GetAllProcessIds() {
-			uint[]? buffer;
-			uint bytesReturned;
-			uint[] processIds;
-
-			buffer = null;
+			uint[]? buffer = null;
+			uint bytesReturned = 0;
 			do {
 				if (buffer is null)
 					buffer = new uint[0x200];
@@ -72,7 +69,7 @@ namespace NativeSharp {
 					if (!EnumProcesses(p, (uint)(buffer.Length * 4), out bytesReturned))
 						return Array2.Empty<uint>();
 			} while (bytesReturned == buffer.Length * 4);
-			processIds = new uint[bytesReturned / 4];
+			uint[] processIds = new uint[bytesReturned / 4];
 			for (int i = 0; i < processIds.Length; i++)
 				processIds[i] = buffer[i];
 			return processIds;
@@ -101,12 +98,10 @@ namespace NativeSharp {
 		}
 
 		internal static bool Is64BitProcessInternal(void* processHandle, out bool is64Bit) {
-			bool isWow64;
-
 			is64Bit = false;
 			if (!NativeEnvironment.Is64BitOperatingSystem)
 				return true;
-			if (!IsWow64Process(processHandle, out isWow64))
+			if (!IsWow64Process(processHandle, out bool isWow64))
 				return false;
 			is64Bit = !isWow64;
 			return true;
@@ -114,19 +109,15 @@ namespace NativeSharp {
 
 		internal static void* GetModuleHandleInternal(void* processHandle, bool first, string moduleName) {
 			void* moduleHandle;
-			uint size;
-			void*[] moduleHandles;
-			StringBuilder moduleNameBuffer;
-
-			if (!EnumProcessModulesEx(processHandle, &moduleHandle, (uint)IntPtr.Size, out size, LIST_MODULES_ALL))
+			if (!EnumProcessModulesEx(processHandle, &moduleHandle, (uint)IntPtr.Size, out uint size, LIST_MODULES_ALL))
 				return null;
 			if (first)
 				return moduleHandle;
-			moduleHandles = new void*[size / (uint)IntPtr.Size];
+			void*[] moduleHandles = new void*[size / (uint)IntPtr.Size];
 			fixed (void** p = moduleHandles)
 				if (!EnumProcessModulesEx(processHandle, p, size, out _, LIST_MODULES_ALL))
 					return null;
-			moduleNameBuffer = new StringBuilder((int)MAX_MODULE_NAME32);
+			var moduleNameBuffer = new StringBuilder((int)MAX_MODULE_NAME32);
 			for (int i = 0; i < moduleHandles.Length; i++) {
 				if (!GetModuleBaseName(processHandle, moduleHandles[i], moduleNameBuffer, MAX_MODULE_NAME32))
 					return null;

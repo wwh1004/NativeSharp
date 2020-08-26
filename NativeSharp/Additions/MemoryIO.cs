@@ -85,10 +85,8 @@ namespace NativeSharp {
 			if (pointer is null)
 				throw new ArgumentNullException(nameof(pointer));
 
-			void* address;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ToAddressInternal(_handle, pointer, out address));
+			ThrowWin32ExceptionIfFalse(ToAddressInternal(_handle, pointer, out void* address));
 			return address;
 		}
 
@@ -116,10 +114,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public byte ReadByte(void* address) {
-			byte value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadByteInternal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadByteInternal(_handle, address, out byte value));
 			return value;
 		}
 
@@ -129,10 +125,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public short ReadInt16(void* address) {
-			short value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadInt16Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadInt16Internal(_handle, address, out short value));
 			return value;
 		}
 
@@ -142,10 +136,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public ushort ReadUInt16(void* address) {
-			ushort value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadUInt16Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadUInt16Internal(_handle, address, out ushort value));
 			return value;
 		}
 
@@ -155,10 +147,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public int ReadInt32(void* address) {
-			int value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadInt32Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadInt32Internal(_handle, address, out int value));
 			return value;
 		}
 
@@ -168,10 +158,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public uint ReadUInt32(void* address) {
-			uint value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadUInt32Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadUInt32Internal(_handle, address, out uint value));
 			return value;
 		}
 
@@ -181,10 +169,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public long ReadInt64(void* address) {
-			long value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadInt64Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadInt64Internal(_handle, address, out long value));
 			return value;
 		}
 
@@ -194,10 +180,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public ulong ReadUInt64(void* address) {
-			ulong value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadUInt64Internal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadUInt64Internal(_handle, address, out ulong value));
 			return value;
 		}
 
@@ -207,10 +191,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public IntPtr ReadIntPtr(void* address) {
-			IntPtr value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadIntPtrInternal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadIntPtrInternal(_handle, address, out var value));
 			return value;
 		}
 
@@ -220,10 +202,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public UIntPtr ReadUIntPtr(void* address) {
-			UIntPtr value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadUIntPtrInternal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadUIntPtrInternal(_handle, address, out var value));
 			return value;
 		}
 
@@ -233,10 +213,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public float ReadSingle(void* address) {
-			float value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadSingleInternal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadSingleInternal(_handle, address, out float value));
 			return value;
 		}
 
@@ -246,10 +224,8 @@ namespace NativeSharp {
 		/// <param name="address">地址</param>
 		/// <returns></returns>
 		public double ReadDouble(void* address) {
-			double value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadDoubleInternal(_handle, address, out value));
+			ThrowWin32ExceptionIfFalse(ReadDoubleInternal(_handle, address, out double value));
 			return value;
 		}
 
@@ -295,10 +271,8 @@ namespace NativeSharp {
 			if (fromEncoding is null)
 				throw new ArgumentNullException(nameof(fromEncoding));
 
-			string value;
-
 			QuickDemand(ProcessAccess.MemoryRead);
-			ThrowWin32ExceptionIfFalse(ReadStringInternal(_handle, address, out value, isEndWithDoubleZero, fromEncoding));
+			ThrowWin32ExceptionIfFalse(ReadStringInternal(_handle, address, out string value, isEndWithDoubleZero, fromEncoding));
 			return value;
 		}
 
@@ -843,9 +817,7 @@ namespace NativeSharp {
 
 		#region pointer impl
 		internal static bool ToAddressInternal(void* processHandle, Pointer pointer, out void* address) {
-			bool is64Bit;
-
-			if (!Is64BitProcessInternal(processHandle, out is64Bit)) {
+			if (!Is64BitProcessInternal(processHandle, out bool is64Bit)) {
 				address = default;
 				return false;
 			}
@@ -853,9 +825,6 @@ namespace NativeSharp {
 		}
 
 		private static bool ToAddressPrivate32(void* processHandle, Pointer pointer, out void* address) {
-			uint newAddress;
-			IList<uint> offsets;
-
 			address = default;
 			if (pointer.BaseAddress == null) {
 				if (string.IsNullOrEmpty(pointer.ModuleName))
@@ -864,8 +833,8 @@ namespace NativeSharp {
 			}
 			if (pointer.BaseAddress == null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
-			newAddress = (uint)pointer.BaseAddress;
-			offsets = pointer.Offsets;
+			uint newAddress = (uint)pointer.BaseAddress;
+			var offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
@@ -879,9 +848,6 @@ namespace NativeSharp {
 		}
 
 		private static bool ToAddressPrivate64(void* processHandle, Pointer pointer, out void* address) {
-			ulong newAddress;
-			IList<uint> offsets;
-
 			address = default;
 			if (pointer.BaseAddress == null) {
 				if (string.IsNullOrEmpty(pointer.ModuleName))
@@ -890,8 +856,8 @@ namespace NativeSharp {
 			}
 			if (pointer.BaseAddress == null)
 				throw new ArgumentNullException(nameof(Pointer.BaseAddress));
-			newAddress = (ulong)pointer.BaseAddress;
-			offsets = pointer.Offsets;
+			ulong newAddress = (ulong)pointer.BaseAddress;
+			var offsets = pointer.Offsets;
 			if (offsets.Count > 0) {
 				for (int i = 0; i < offsets.Count - 1; i++) {
 					newAddress += offsets[i];
@@ -971,54 +937,43 @@ namespace NativeSharp {
 		}
 
 		internal static bool ReadStringInternal(void* processHandle, void* address, out string value, bool isEndWithDoubleZero, Encoding fromEncoding) {
-			// 在出现时一些特殊字符可能导致字符串被过早截取！
+			// TODO: 在出现时一些特殊字符可能导致字符串被过早截取！
 			const uint BASE_BUFFER_SIZE = 0x100;
 
 			uint dummy;
-
 			if (!ReadInternal(processHandle, address, &dummy, isEndWithDoubleZero ? 2u : 1)) {
 				value = string.Empty;
 				return false;
 			}
-			using (MemoryStream stream = new MemoryStream((int)BASE_BUFFER_SIZE)) {
-				uint bufferSize;
-				byte[]? bytes;
-				bool isZero;
-				bool isLastZero;
-
-				bufferSize = BASE_BUFFER_SIZE;
-				bytes = null;
-				isLastZero = false;
-				do {
-					byte[] buffer;
-					long oldPostion;
-					int length;
-
-					buffer = new byte[bufferSize];
-					ReadBytesInternal(processHandle, address, buffer);
-					oldPostion = stream.Position == 0 ? 0 : stream.Position - (isEndWithDoubleZero ? 2 : 1);
-					stream.Write(buffer, 0, buffer.Length);
-					length = (int)(stream.Length - oldPostion);
-					stream.Position = oldPostion;
-					for (int i = 0; i < length; i++) {
-						isZero = stream.ReadByte() == 0;
-						if ((isEndWithDoubleZero && !isLastZero) || !isZero) {
-							isLastZero = isZero;
-							continue;
-						}
-						bytes = new byte[stream.Position];
-						stream.Position = 0;
-						stream.Read(bytes, 0, bytes.Length);
-						break;
+			using var stream = new MemoryStream((int)BASE_BUFFER_SIZE);
+			uint bufferSize = BASE_BUFFER_SIZE;
+			byte[]? bytes = null;
+			bool isLastZero = false;
+			do {
+				byte[] buffer = new byte[bufferSize];
+				ReadBytesInternal(processHandle, address, buffer);
+				long oldPostion = stream.Position == 0 ? 0 : stream.Position - (isEndWithDoubleZero ? 2 : 1);
+				stream.Write(buffer, 0, buffer.Length);
+				int length = (int)(stream.Length - oldPostion);
+				stream.Position = oldPostion;
+				for (int i = 0; i < length; i++) {
+					bool isZero = stream.ReadByte() == 0;
+					if ((isEndWithDoubleZero && !isLastZero) || !isZero) {
+						isLastZero = isZero;
+						continue;
 					}
-					address = (byte*)address + bufferSize;
-					bufferSize += BASE_BUFFER_SIZE;
-				} while (bytes is null);
-				if (fromEncoding.CodePage != Encoding.Unicode.CodePage)
-					bytes = Encoding.Convert(fromEncoding, Encoding.Unicode, bytes);
-				fixed (void* p = bytes)
-					value = new string((char*)p);
-			}
+					bytes = new byte[stream.Position];
+					stream.Position = 0;
+					stream.Read(bytes, 0, bytes.Length);
+					break;
+				}
+				address = (byte*)address + bufferSize;
+				bufferSize += BASE_BUFFER_SIZE;
+			} while (bytes is null);
+			if (fromEncoding.CodePage != Encoding.Unicode.CodePage)
+				bytes = Encoding.Convert(fromEncoding, Encoding.Unicode, bytes);
+			fixed (void* p = bytes)
+				value = new string((char*)p);
 			return true;
 		}
 
@@ -1082,13 +1037,12 @@ namespace NativeSharp {
 		}
 
 		internal static bool WriteStringInternal(void* processHandle, void* address, string value, Encoding toEncoding) {
-			byte[] buffer;
-
 			value += "\0";
-			if (toEncoding.CodePage == Encoding.Unicode.CodePage)
+			if (toEncoding.CodePage == Encoding.Unicode.CodePage) {
 				fixed (void* p = value)
 					return WriteInternal(processHandle, address, p, (uint)(value.Length * 2));
-			buffer = Encoding.Convert(Encoding.Unicode, toEncoding, Encoding.Unicode.GetBytes(value));
+			}
+			byte[] buffer = Encoding.Convert(Encoding.Unicode, toEncoding, Encoding.Unicode.GetBytes(value));
 			fixed (void* p = buffer)
 				return WriteInternal(processHandle, address, p, (uint)buffer.Length);
 		}

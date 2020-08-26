@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Title>NativeSharp</Title>
-		<Product>NativeSharp</Product>
+		<Title>$(ProjectName)</Title>
+		<Version>3.0.0.0</Version>
+		<Copyright>Copyright © 2018-2020 Wwh</Copyright>
 		<Description>Win32 functions helper</Description>
-		<Copyright>Copyright © 2018-2019 Wwh</Copyright>
-		<AssemblyVersion>3.0.0.0</AssemblyVersion>
-		<FileVersion>3.0.0.0</FileVersion>
+	</PropertyGroup>
+	<PropertyGroup>
 		<TargetFrameworks>net20;net40;netstandard1.3</TargetFrameworks>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -15,7 +15,6 @@
 		<Features>strict</Features>
 		<PackageId>NativeSharp-lib</PackageId>
 		<Authors>Wwh</Authors>
-		<PackageVersion>3.0.0.0</PackageVersion>
 		<PackageProjectUrl>https://github.com/wwh1004/NativeSharp</PackageProjectUrl>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<IncludeSymbols>true</IncludeSymbols>

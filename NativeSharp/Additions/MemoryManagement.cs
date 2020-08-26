@@ -93,9 +93,7 @@ namespace NativeSharp {
 
 		/// <summary />
 		public override string ToString() {
-			bool is64Bit;
-
-			is64Bit = (ulong)_address > uint.MaxValue;
+			bool is64Bit = (ulong)_address > uint.MaxValue;
 			return $"Address=0x{((IntPtr)_address).ToString(is64Bit ? "X16" : "X8")} Size=0x{((IntPtr)_size).ToString(is64Bit ? "X16" : "X8")}";
 		}
 	}
@@ -122,16 +120,11 @@ namespace NativeSharp {
 		}
 
 		internal static IEnumerable<PageInfo> EnumeratePageInfosInternal(IntPtr processHandle, IntPtr startAddress, IntPtr endAddress) {
-			bool is64Bit;
-			IntPtr nextAddress;
-
-			if (!SafeIs64BitProcessInternal(processHandle, out is64Bit))
+			if (!SafeIs64BitProcessInternal(processHandle, out bool is64Bit))
 				yield break;
-			nextAddress = startAddress;
+			var nextAddress = startAddress;
 			do {
-				MEMORY_BASIC_INFORMATION mbi;
-
-				if (!SafeVirtualQueryEx(processHandle, nextAddress, out mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
+				if (!SafeVirtualQueryEx(processHandle, nextAddress, out var mbi, MEMORY_BASIC_INFORMATION.UnmanagedSize))
 					break;
 				yield return new PageInfo(mbi);
 				nextAddress = SafeGetNextAddress(mbi);
@@ -174,10 +167,7 @@ namespace NativeSharp {
 		/// <param name="oldProtection">原来的内存保护选项</param>
 		/// <returns></returns>
 		public bool SetProtection(void* address, uint size, MemoryProtection protection, out MemoryProtection oldProtection) {
-			uint temp;
-			bool result;
-
-			result = VirtualProtectEx(_handle, address, size, (uint)protection, out temp);
+			bool result = VirtualProtectEx(_handle, address, size, (uint)protection, out uint temp);
 			oldProtection = (MemoryProtection)temp;
 			return result;
 		}

@@ -15,7 +15,6 @@ namespace NativeSharp {
 
 		private static bool GetIs64BitOperatingSystem() {
 			bool is64BitOperatingSystem;
-
 			if (IntPtr.Size == 8)
 				is64BitOperatingSystem = true;
 			else
