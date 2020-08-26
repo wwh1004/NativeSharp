@@ -1220,7 +1220,7 @@ namespace NativeSharp {
 
 		private static void IsAssembly(string path, out bool isAssembly, out InjectionClrVersion clrVersion) {
 			try {
-				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read)) ;
+				using var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
 				using var reader = new BinaryReader(stream);
 				clrVersion = GetVersionString(reader) switch
 				{
