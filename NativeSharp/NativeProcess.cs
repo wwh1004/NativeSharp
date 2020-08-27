@@ -8,43 +8,30 @@ namespace NativeSharp {
 	public enum ProcessAccess : uint {
 		/// <summary />
 		CreateProcess = 0x0080,
-
 		/// <summary />
 		CreateThread = 0x0002,
-
 		/// <summary />
 		DuplicateHandle = 0x0040,
-
 		/// <summary />
 		QueryInformation = 0x0400,
-
 		/// <summary />
 		QueryLimitedInformation = 0x1000,
-
 		/// <summary />
 		SetInformation = 0x0200,
-
 		/// <summary />
 		SetQuota = 0x0100,
-
 		/// <summary />
 		SuspendResume = 0x0800,
-
 		/// <summary />
 		Synchronize = 0x00100000,
-
 		/// <summary />
 		Terminate = 0x0001,
-
 		/// <summary />
 		MemoryOperation = 0x0008,
-
 		/// <summary />
 		MemoryRead = 0x0010,
-
 		/// <summary />
 		MemoryWrite = 0x0020,
-
 		/// <summary />
 		AllAccess = STANDARD_RIGHTS_REQUIRED | Synchronize | 0xFFFF
 	}

@@ -65,9 +65,10 @@ namespace NativeSharp {
 					buffer = new uint[0x200];
 				else
 					buffer = new uint[buffer.Length * 2];
-				fixed (uint* p = buffer)
+				fixed (uint* p = buffer) {
 					if (!EnumProcesses(p, (uint)(buffer.Length * 4), out bytesReturned))
 						return Array2.Empty<uint>();
+				}
 			} while (bytesReturned == buffer.Length * 4);
 			uint[] processIds = new uint[bytesReturned / 4];
 			for (int i = 0; i < processIds.Length; i++)
@@ -114,9 +115,10 @@ namespace NativeSharp {
 			if (first)
 				return moduleHandle;
 			void*[] moduleHandles = new void*[size / (uint)IntPtr.Size];
-			fixed (void** p = moduleHandles)
+			fixed (void** p = moduleHandles) {
 				if (!EnumProcessModulesEx(processHandle, p, size, out _, LIST_MODULES_ALL))
 					return null;
+			}
 			var moduleNameBuffer = new StringBuilder((int)MAX_MODULE_NAME32);
 			for (int i = 0; i < moduleHandles.Length; i++) {
 				if (!GetModuleBaseName(processHandle, moduleHandles[i], moduleNameBuffer, MAX_MODULE_NAME32))
