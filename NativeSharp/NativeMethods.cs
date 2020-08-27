@@ -75,9 +75,9 @@ namespace NativeSharp {
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static extern bool EnumProcessModulesEx(void* hProcess, void** lphModule, uint cb, out uint lpcbNeeded, uint dwFilterFlag);
 
-		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
+		[DllImport("kernel32.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]
-		public static extern bool GetProcessImageFileName(void* hProcess, StringBuilder lpImageFileName, uint nSize);
+		public static extern bool QueryFullProcessImageName(void* hProcess, uint dwFlags, StringBuilder lpExeName, uint* lpdwSize);
 
 		[DllImport("psapi.dll", BestFitMapping = false, CharSet = CharSet.Unicode, SetLastError = true)]
 		[return: MarshalAs(UnmanagedType.Bool)]

@@ -28,7 +28,8 @@ namespace NativeSharp {
 			get {
 				QuickDemand(ProcessAccess.QueryInformation);
 				var iamgePath = new StringBuilder((int)MAX_PATH);
-				return GetProcessImageFileName(_handle, iamgePath, MAX_PATH) ? iamgePath.ToString() : string.Empty;
+				uint size = MAX_PATH;
+				return QueryFullProcessImageName(_handle, 0, iamgePath, &size) ? iamgePath.ToString() : string.Empty;
 			}
 		}
 
@@ -41,7 +42,7 @@ namespace NativeSharp {
 			void* moduleHandle;
 			if (!EnumProcessModulesEx(_handle, &moduleHandle, (uint)IntPtr.Size, out uint size, LIST_MODULES_ALL))
 				return Array2.Empty<NativeModule>();
-			void*[]? moduleHandles = new void*[size / (uint)IntPtr.Size];
+			void*[] moduleHandles = new void*[size / (uint)IntPtr.Size];
 			fixed (void** p = moduleHandles) {
 				if (!EnumProcessModulesEx(_handle, p, size, out _, LIST_MODULES_ALL))
 					return Array2.Empty<NativeModule>();
